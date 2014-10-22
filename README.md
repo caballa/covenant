@@ -10,9 +10,17 @@ implements a CEGAR-based schema which might not terminate. Covenant
 implements several refinement techiques. One of these refinements is
 complete if the CFLs are regularly separable.
 
+#Installation#
+
+- `mkdir build && cd build`
+- `cmake ..`
+- `make`
+
 #Usage#
 
-The format of the CFLs is a bit inconvenient for now. 
+`build/tools/covenant --help` 
+
+The format of the CFLs is a bit inconvenient for now.  This is an example:
 
     ; this is a comment
 
