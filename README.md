@@ -10,11 +10,22 @@ implements a CEGAR-based schema which might not terminate. Covenant
 implements several refinement techiques. One of these refinements is
 complete if the CFLs are regularly separable.
 
+#Prerequisites#
+
+- Boost is required. It is recommended version 1.55 or newer
+- Be sure to install the Boost program_options library and set `BOOST_ROOT`
+
 #Installation#
 
 - `mkdir build && cd build`
 - `cmake ..`
 - `make`
+
+If ninja is installed then try instead:
+
+- `mkdir build && cd build`
+- `cmake -G Ninja ..`
+- `ninja`
 
 #Usage#
 

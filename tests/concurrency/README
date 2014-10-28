@@ -1,0 +1,42 @@
+
+ ** Many thanks to Georgel Calin for making them available! **
+
+All the .cfg files in this directory correspond to the experiments in
+the paper Language-Theoretic Abstraction Refinement by Z.Long,
+G.Calin, R. Majumdar, and R.Meyer (FASE'12).
+
+toy_shared_mem       corresponds to SharedMem   in Table 2, page 374
+erlang_mutex         corresponds to Mutex       in Table 2, page 374
+erlang_res_alloc     corresponds to RA          in Table 2, page 374
+erlang_adv_res_alloc corresponds to Modified RA in Table 2, page 374
+erlang_teleserver    corresponds to TNA         in Table 2, page 374
+
+From table 2, all programs are SAFE (i.e., intersection of CFGs are
+unsat) except erlang_teleserver.
+
+bluetooth_v1      corresponds to Version 1       in Table 3, page 374
+bluetooth_v2      corresponds to Version 2       in Table 3, page 374
+bluetooth_v2_unsound_heur W/ heuristics
+bluetooth_v3_2a1s corresponds to Version 3(2A1S) in Table 3, page 374
+bluetooth_v3_1a2s corresponds to Version 3(1A2S) in Table 3, page 374
+bluetooth_v3_1a2s_unsound_heur W/ heuristics
+
+From table 3, all programs are UNSAFE except bluetooth_v3_2a1s.
+
+Btw, the erlang* programs are textbook examples while bluetooth* are
+real drivers.
+
+-----------------------------------------
+                  #Constraints
+-----------------------------------------
+toy_shared_mem         4  (2CFGs+2REGs)
+erlang_mutex           4  (4REGs)
+erlang_res_alloc       2  (2REGs)
+erlang_adv_res_alloc   5  (5REGs)
+erlang_teleserver      3  (3REGs)
+-----------------------------------------
+bluetooth_v1           7  (2CFGs+5REGs)
+bluetooth_v2           9  (3CFGs+6REGs)
+bluetooth_v3_1a2s      8  (3CFGs+5REGs)
+bluetooth_v3_2a1s      9  (3CFGs+6REGs)
+
