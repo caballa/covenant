@@ -62,3 +62,7 @@ the ASCII character "a", `\x62` is "b", and so on.
 #People#
 
 * [Jorge A. Navas](http://ti.arc.nasa.gov/profile/jorge/)
+* Graeme Gange
+* Peter Schachte
+* Harald Sondergaard
+* Peter J. Stuckey
