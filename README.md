@@ -7,7 +7,7 @@ Intersection of Context-Free Languages
 Covenant is a tool for testing emptiness of a set of context free
 languages (CFLs). Since this problem is undecidable, Covenant
 implements a CEGAR-based schema which might not terminate. Covenant
-implements several refinement techiques. One of these refinements is
+implements several refinement techniques. One of these refinements is
 complete if the CFLs are regularly separable.
 
 #Prerequisites#
@@ -31,7 +31,7 @@ If ninja is installed then try instead:
 
 `build/tools/covenant --help` 
 
-The format of the CFLs is a bit inconvenient for now.  This is an example:
+This is an example that shows the format of the CFLs:
 
     ; this is a comment
 
