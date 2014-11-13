@@ -63,7 +63,11 @@ class Product: public RegSolver<EdgeSym>
       {
         reg_langs_copy.push_back(reg_langs[i]);
       }
-      dfa_t fa = gen_sigma_ge_length(shortest_witness, alphstart, alphsz);
+
+      assert(!reg_langs.empty ());
+      TermFactory tfac = reg_langs [0]. getTermFactory ();
+
+      dfa_t fa = gen_sigma_ge_length(shortest_witness, alphstart, alphsz, tfac);
       reg_langs_copy.push_back(fa);
 
 
@@ -222,10 +226,11 @@ class Product: public RegSolver<EdgeSym>
   // Generate all the strings with length >= @length
   inline dfa_t gen_sigma_ge_length(unsigned length, 
                                    unsigned alphstart, 
-                                   unsigned alphsz)
+                                   unsigned alphsz,
+                                   TermFactory tfac)
   {
     unsigned n_states = length + 1;
-    dfa_t fa;
+    dfa_t fa (tfac);
     for (unsigned i=0; i < n_states; i++)
     {
       fa.state(i);

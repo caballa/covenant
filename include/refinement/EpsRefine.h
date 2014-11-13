@@ -43,7 +43,7 @@ class EpsRefine
   // Refine a language with respect to a witness, following the chosen
   // generalization strategy.
   // 
-  // Return a generalized witness that by construction \not \in
+  // Return a generalized witness that by construction not in the
   // language of the CFG.
   virtual DFA<EdgeSym> refine(CondEpsGen<EdgeSym>& gen) = 0;
 };

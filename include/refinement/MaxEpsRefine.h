@@ -33,7 +33,7 @@ namespace covenant {
       if(gen.word.size() == 0)
       {
         // Just give an empty automaton.
-        dfa_t dfa;
+        dfa_t dfa (gen.getTermFactory ());
         State q0 = dfa.state(0);
         dfa.setStart(q0);
         dfa.accept(q0);

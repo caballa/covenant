@@ -299,9 +299,9 @@ class CycleBreakingAbstract: public Abstract<EdgeSym>
 {
  public:
 
-  DFA<EdgeSym> do_abstraction(const CFG &g, const bool is_regular)
+  DFA<EdgeSym> do_abstraction(CFG &g, const bool is_regular)
   {
-    DFA<EdgeSym> sfa;
+    DFA<EdgeSym> sfa (g.getTermFactory ());
     if (is_regular)
     {        
       LOG( "verbose", cout << "The CFG is regular thus no need to abstract.\n");

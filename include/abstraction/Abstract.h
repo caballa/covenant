@@ -42,7 +42,7 @@ class Abstract{
   // Given a CFG g generates a finite automata a such that L(g) is
   // contained in L(a).
   virtual DFA<EdgeSym> 
-  do_abstraction(const CFG &g, const bool is_regular) = 0;
+  do_abstraction(CFG &g, const bool is_regular) = 0;
 
 };
 

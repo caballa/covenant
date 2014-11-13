@@ -518,7 +518,9 @@ namespace covenant
       {
         if (prods[vv].size() == 0){
           error=true;
-          error_msg << "ERROR: " << Sym::mkVar(vv) << " non-terminal symbol without rule.\n"; 
+          error_msg << "ERROR: " 
+                    << Sym::mkVar(vv) << " non-terminal symbol without rule.\n"; 
+          error_msg << "Also possible a terminal misinterpreted as nonterminal.\n";
         }
       }
       for ( unsigned int vv = 0; (vv < prods.size() && !error); vv++ )

@@ -36,7 +36,8 @@ class StronglyRegularToFA
 
  public:  
 
-  StronglyRegularToFA(CFG g_): g(g_), HasBeenComputed(false)
+  StronglyRegularToFA(CFG g_): 
+     g(g_), dfa(g.getTermFactory ()), HasBeenComputed(false)
   {
     // The constructor performs three tasks:
     // - compute the strongly connected components of g

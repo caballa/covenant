@@ -114,23 +114,22 @@ Sym parse_symbol(In& input, CFG &g, NonTerminalMap &mapping)
   return s;
 }
 
-template<class In>
-int parse_hex(In& input)
-{ 
-  // The format is: "\xnn"  where nn are exactly two hexadecimal digits.
-  
-  int val = 0;
-  char c;
-  while(!input.empty() && isxdigit(c = input.peek()))
-  {
-    input.chomp();
-    if (isdigit(c))
-      val = 16*val + (c - '0');
-    else
-      val = 16*val + (tolower(c) -'a' + 10);
-  }
-  return val;
-}
+// template<class In>
+// int parse_hex(In& input)
+// { 
+//   // The format is: "\xnn"  where nn are exactly two hexadecimal digits.
+//   int val = 0;
+//   char c;
+//   while(!input.empty() && isxdigit(c = input.peek()))
+//   {
+//     input.chomp();
+//     if (isdigit(c))
+//       val = 16*val + (c - '0');
+//     else
+//       val = 16*val + (tolower(c) -'a' + 10);
+//   }
+//   return val;
+// }
 
 
 template<class In>
@@ -217,15 +216,15 @@ void parse_rule_rhs(In& input, CFG &g, Sym lhs, NonTerminalMap &mapping)
 	ss.push_back(term);
         }
         break;
-      case '\\':
-        {
-	input.chomp();
-	input.chomp('x'); 
-	int val = parse_hex(input);
-	Sym term = Sym::mkTerm(val);
-	ss.push_back(term);
-        }
-        break;
+      // case '\\':
+      //   {
+      //     input.chomp();
+      //     input.chomp('x'); 
+      //     int val = parse_hex(input);
+      //     Sym term = Sym::mkTerm(val);
+      //     ss.push_back(term);
+      //   }
+      //   break;
       default:
         ss.push_back(parse_symbol(input, g,mapping));
     } // end switch

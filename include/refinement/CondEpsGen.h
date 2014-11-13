@@ -14,6 +14,8 @@
 #include <CFG.h>
 #include <DFA.h>
 
+#include <boost/noncopyable.hpp>
+
 #define EPSSYM (-1)
 
 namespace covenant {
@@ -88,7 +90,8 @@ namespace covenant {
   }; // end class CFGDigest
 
   template<typename EdgeSym>
-  class CondEpsGen {
+  class CondEpsGen: boost::noncopyable 
+  {
     
     typedef struct 
     {
@@ -108,7 +111,45 @@ namespace covenant {
     typedef DFA<EdgeSym> dfa_t;
     typedef CFGDigest<EdgeSym> cfg_digest_t;
 
-    CondEpsGen(cfg_digest_t& _digest, const vector<int>& _word)
+   protected:
+    cfg_digest_t& digest;
+
+   public:
+    const vector<int> word;
+    
+   protected:
+    
+    int nstates;
+    int nprods;
+
+    // Precomputed extensions
+    // extend_fwd: A +-> (B, C) iff C -> A B in g.
+
+    // Lookup tables
+    // produce_fwd: q_i, A +-> q_j iff g |- A over (q_i, q_j).
+    // produce_rev: q_j, A +-> q_i iff g |- A over (q_i, q_j).
+    // produced: (q_i, A, q_j) = T iff g |- A over (q_i, q_j).
+    vector< vector<int> > produce_fwd;
+    vector< vector<int> > produce_rev;
+    vector<bool> produced;
+    // bool* produced;
+
+    // Trailing
+    int head; // Next production to process
+    vector<int> lim;
+    vector<prod_info> added; // Productions that were added.
+
+    vector<int> declim;
+    vector<prod_info> decisions;
+
+    vector< vector<int> > eps_preds;
+    vector< vector<int> > eps_succs;
+
+    TermFactory _tfac;
+
+   public:
+
+    CondEpsGen(cfg_digest_t& _digest, const vector<int>& _word, TermFactory tfac)
         : digest(_digest), word(_word),
           nstates(1+word.size()), nprods(digest.nprods),
           produce_fwd(vector< vector<int> >(nstates*nprods, vector<int>())),
@@ -117,7 +158,8 @@ namespace covenant {
           //      produced((bool*) calloc(nstates*nstates*nprods, sizeof(bool))),
           head(0),
           eps_preds(nstates, vector<int>()),
-          eps_succs(nstates, vector<int>())
+          eps_succs(nstates, vector<int>()),
+          _tfac(tfac)
     {
       // Assumption -- g is semi-normalized.
       // Single productions may be nullable, but
@@ -154,6 +196,8 @@ namespace covenant {
     }
 
     ~CondEpsGen() { }
+
+    TermFactory getTermFactory () const { return _tfac; }
 
     // Returns true if the language is empty
     bool addEpsTrans(int qi, int qj)
@@ -213,12 +257,16 @@ namespace covenant {
     }
     
     // Convert an augmented-word into an automaton.
-    dfa_t emit_dfa(void){
-      dfa_t dfa;
+    dfa_t emit_dfa(void)
+    {
+      dfa_t dfa (_tfac);
       
-      for(unsigned i=0; i < word.size(); i++){
+      for(unsigned i=0; i < word.size(); i++)
+      {
         // This is gonna at least double the size of the alphabet. O__O
-        dfa.transition(dfa.state(i), EdgeSym::mkTerm(word[i]), dfa.state(i+1));
+        dfa.transition(dfa.state(i), 
+                       EdgeSym::mkTerm(word[i]), 
+                       dfa.state(i+1));
       }
       dfa.setStart(dfa.state(0));
       dfa.accept(dfa.state(word.size()));
@@ -231,7 +279,8 @@ namespace covenant {
         {
           dfa.eps_transition(dfa.state(d.start), dfa.state(d.end));
         } else {
-          dfa.transition(dfa.state(d.start), EdgeSym::mkTerm(d.s), dfa.state(d.end));
+          dfa.transition(dfa.state(d.start), EdgeSym::mkTerm(d.s), 
+                         dfa.state(d.end));
         }
       }
       
@@ -368,36 +417,6 @@ namespace covenant {
       return produce_rev[nstates*p + qj];
     }
 
-    cfg_digest_t& digest;
- public:
-    const vector<int> word;
- protected:
-    
-    int nstates;
-    int nprods;
-
-    // Precomputed extensions
-    // extend_fwd: A +-> (B, C) iff C -> A B in g.
-
-    // Lookup tables
-    // produce_fwd: q_i, A +-> q_j iff g |- A over (q_i, q_j).
-    // produce_rev: q_j, A +-> q_i iff g |- A over (q_i, q_j).
-    // produced: (q_i, A, q_j) = T iff g |- A over (q_i, q_j).
-    vector< vector<int> > produce_fwd;
-    vector< vector<int> > produce_rev;
-    vector<bool> produced;
-    // bool* produced;
-
-    // Trailing
-    int head; // Next production to process
-    vector<int> lim;
-    vector<prod_info> added; // Productions that were added.
-
-    vector<int> declim;
-    vector<prod_info> decisions;
-
-    vector< vector<int> > eps_preds;
-    vector< vector<int> > eps_succs;
   }; // end CondEpsGen
 
 }

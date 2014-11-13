@@ -33,12 +33,13 @@ enum STATUS { SAT, UNSAT, UNKNOWN};
 namespace witness_impl
 {
   template<typename EdgeSym>
-  inline DFA<EdgeSym> to_automata(const witness_t &witness)
+  inline DFA<EdgeSym> to_automata(const witness_t &witness, 
+                                  TermFactory tfac)
   {
     if (witness.empty())
       throw error("regular solver returned an empty witness!");
 
-    DFA<EdgeSym> dfa;
+    DFA<EdgeSym> dfa (tfac);
     State start, final;
     State prev , curr;
     unsigned n = witness.size();
@@ -142,7 +143,7 @@ class Solver: public boost::noncopyable {
   // automata that overapproximates the language of the context-free
   // grammar.  If is_regular[i] is true then the conversion does not
   // lose precision.
-  vector<dfa_t> abstraction(const vector<CFG>  &cfgs, 
+  vector<dfa_t> abstraction(vector<CFG>  &cfgs, 
                             const vector<bool> &is_regular, 
                             AbstractMethod abs)
   { 
@@ -150,7 +151,8 @@ class Solver: public boost::noncopyable {
     fas.reserve(cfgs.size());
     for(unsigned int i = 0 ; i < cfgs.size() ; i++)
     {
-      dfa_t fa;
+      dfa_t fa (tfac);
+
       switch (abs)
       {
         case SIGMA_STAR: 
@@ -191,7 +193,7 @@ class Solver: public boost::noncopyable {
     
     if (opts.is_dot_enabled)
     {
-      dfa_t cex = witness_impl::to_automata<EdgeSym>(witness);
+      dfa_t cex = witness_impl::to_automata<EdgeSym>(witness, tfac);
       cex.print_dot(refine_log, "Cex ") ;
     }
 
@@ -214,7 +216,7 @@ class Solver: public boost::noncopyable {
       }
       
       // First, we check if the witness is in the language.
-      cond_eps_gen_t gen(digests[li], witness);
+      cond_eps_gen_t gen(digests[li], witness, tfac);
       if(!gen.is_empty())
       {
         LOG ("verbose", std::cout << "Cex is accepted by CFG " << li << "\n");

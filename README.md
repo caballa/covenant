@@ -31,34 +31,56 @@ If ninja is installed then try instead:
 
 `build/tools/covenant --help` 
 
-The format of the CFLs is a bit inconvenient for now.  This is an example:
+We describe the format of the CFLs through an example:
 
     ; this is a comment
 
     (  S1 -> [ A B]; 
-      A  -> [ \x61 \x61]; 
-      A  -> [ \x62 \x62]; 
-      A  -> [ \x61 S1 \x61, \x62 S1 \x62 ]; 
-      B  -> [ \x61 \x62 B]; 
-      B  -> [ \x61 \x62]  
+      A  -> [ "a" "b"]; 
+      A  -> [ "b" "b"]; 
+      A  -> [ "a" S1 "a", "b" S1 "b" ]; 
+      B  -> [ "a" "b" B]; 
+      B  -> [ "a" "b"]  
     )
     
     (  S2 -> [ A B]; 
-      A  -> [ \x61 \x61]; 
-      A  -> [ \x62 \x62]; 
-      A  -> [ \x61 S2 \x61, \x62 S2 \x62 ]; 
-      B  -> [ \x62 \x61 B];
-      B  -> [ \x62 \x61]  
+      A  -> [ "a" "a"]; 
+      A  -> [ "b" "b"]; 
+      A  -> [ "a" S2 "a", "b" S2 "b" ]; 
+      B  -> [ "b" "a" B];
+      B  -> [ "b" "a"]  
     )  
 
 The non-terminal symbol appearing on the left-hand side in the first
 grammar production is considered the start symbol of the grammar. In
 the above example the start symbols are `S1` and `S2`, respectively.
 
-A current limitation is that terminal symbols can only ranges from 0
-to 127 and they must be described in hexadecimal format. E.g., `\x61` is
-the ASCII character "a", `\x62` is "b", and so on.
+Terminal symbols must be between double quotes (i.e.,
+`""`). Everything else that is not between double quotes will be
+interpreted as non-terminal symbols.
+
+Each grammar production is of the form `NT -> [ ... ];` where `...` is a sequence of
+any nonterminal and terminal symbol separated by one or more
+blanks. We also allow `NT -> [ ... , ... ];` to represent two grammar
+productions with the same lhs NT. That is,  `A  -> [ "a" S2 "a", "b" S2 "b" ];` 
+is syntactic sugar for `A  -> [ "a" S2 "a"]; A ->[ "b" S2 "b" ];`
+ 
+Note that all the rhs of the grammar productions must ends up with the symbol `;`
+except the last one.
+
+If we wrap the above example into a file test.cfg and try
+`build/tools/covenant test.cfg`, we should obtain:
+
+`Finished after 4 cegar iterations.
+======
+UNSAT
+======
+`
 
 #People#
 
 * [Jorge A. Navas](http://ti.arc.nasa.gov/profile/jorge/)
+* Graeme Gange
+* Peter Schachte
+* Harald Sondergaard
+* Peter J. Stuckey

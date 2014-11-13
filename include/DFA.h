@@ -237,6 +237,8 @@ namespace covenant {
     typedef boost::unordered_map<int , set<unsigned int> > ReverseStateTable;
     typedef boost::unordered_map<unsigned int, unsigned int> MapStates;
 
+    TermFactory _tfac;
+
   public:
 
     typedef DFA<V> dfa_t;
@@ -257,7 +259,7 @@ namespace covenant {
     std::vector< std::vector<int> > eps;    // Epsilon transitions
     std::vector<bool> accepts;
 
-    DFA() : start( 0 ) { }
+    DFA(TermFactory tfac) : _tfac(tfac), start( 0 ) { }
     
     void clear()
     {
@@ -266,6 +268,8 @@ namespace covenant {
       accepts.clear();
       start = 0;
     }
+
+    TermFactory getTermFactory () const { return _tfac; }
 
     State state(int i) 
     {
@@ -349,7 +353,11 @@ namespace covenant {
         {
           if( ti != 0 )
             o << ", ";
-	  o << ts[ti].val << " -> " << ts[ti].dest;
+          if (ts[ti].val.isVar ())
+            o << ts[ti].val;
+          else
+            o << _tfac->remap (ts[ti].val.symID ());
+          o << " -> " << ts[ti].dest;
         }
         o << "]";
         
@@ -390,7 +398,12 @@ namespace covenant {
         for( unsigned int ti = 0; ti < trans[ss].size(); ti++ )
         {
           o << "q" << ss << " -> " << "q" << trans[ss][ti].dest 
-            << " [label=\"" << trans[ss][ti].val << "\"];" << std::endl;
+            << " [label=\"";
+          if (trans[ss][ti].val.isVar ())
+            o << trans[ss][ti].val; 
+          else
+            o << _tfac->remap (trans[ss][ti].val.symID ());
+          o << "\"];" << std::endl;
         }
         for(unsigned int ei = 0; ei < eps[ss].size(); ei++)
         {
@@ -498,7 +511,7 @@ namespace covenant {
       if (newstart < 0) 
         throw error("DFA does not have an initial state");
 
-      dfa_t resized_fa;    
+      dfa_t resized_fa (_tfac);    
 
       // Create new states
       for(unsigned int i=0; i<nstates; i++)
@@ -603,7 +616,7 @@ namespace covenant {
            cout << "Converting from NDFA to DFA ... \n");
       
       // The deterministic dfa
-      dfa_t dfa;
+      dfa_t dfa (_tfac);
 
       // Initialise bookkeeping.
       unsigned int ID = 0;
@@ -757,7 +770,8 @@ namespace covenant {
     // Post: the returned value is a deterministic finite automata.
     static dfa_t det_union(const dfa_t &dfa1, const dfa_t &dfa2)
     { 
-      return product<UnionAccept>(dfa1,dfa2);
+      TermFactory tfac = dfa1.getTermFactory ();
+      return product<UnionAccept> (dfa1, dfa2, tfac);
     }
 
     // Return true iff the intersection is not empty and inter is the
@@ -766,7 +780,8 @@ namespace covenant {
     static boost::optional<dfa_t> intersection(const dfa_t &dfa1, 
                                                const dfa_t &dfa2)
     { 
-      dfa_t inter = product<IntersectAccept>(dfa1,dfa2);
+      TermFactory tfac = dfa1.getTermFactory ();
+      dfa_t inter = product<IntersectAccept> (dfa1, dfa2, tfac);
       bool res = inter.eliminateDeadStates();
       if (res)
         return boost::optional<dfa_t> (inter);
@@ -840,7 +855,7 @@ namespace covenant {
       // Create the minimal dfa
       ////
       
-      dfa_t min_dfa;    
+      dfa_t min_dfa (_tfac);    
       // Create the equivalence classes of the "indistinguishability"
       // relation
       UnionFind eq_classes(dfa.nStates());
@@ -1035,7 +1050,8 @@ namespace covenant {
     // union (depends on the template parameter T) of the languages of
     // sfa1 and sfa2. 
     template<typename T>
-    static dfa_t product(const dfa_t &sfa1, const dfa_t &sfa2)
+    static dfa_t product (const dfa_t &sfa1, const dfa_t &sfa2, 
+                          TermFactory tfac)
     { 
       LOG ("dfa-product", 
            cout << "Begin product construction of sfa's ... \n");
@@ -1045,7 +1061,7 @@ namespace covenant {
       sfa2.CheckNoEpsilonTrans();
 #endif 
 
-      dfa_t product;
+      dfa_t product (tfac);
 
       // Initialise bookkeeping.
       unsigned int ID = 0;
