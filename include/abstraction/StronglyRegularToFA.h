@@ -65,7 +65,7 @@ class StronglyRegularToFA
     CFG g1(g); g1.eliminateEpsilon();
     set<EdgeSym> generatingSymbols = g1.computeGenerating();
 
-    LOG ("abstraction", 
+    LOG ("abstraction-mkFA", 
          cout << "Generating symbols: " << generatingSymbols << endl);
 
     // Traverse all grammar productions
@@ -117,7 +117,7 @@ class StronglyRegularToFA
       }
     }
 
-    LOG ("abstraction", 
+    LOG ("abstraction-mkFA", 
          print_left_or_right_generating(left_gen,right_gen));
 
     // Here we create the "recursive" map. We map each mutually
@@ -141,7 +141,7 @@ class StronglyRegularToFA
       }
     }
       
-    LOG ("abstraction", print_recursive());
+    LOG ("abstraction-mkFA", print_recursive());
       
     // reverse map for efficient queries
     // sym_scc_map.reserve(conn.nGroups());
@@ -187,14 +187,14 @@ class StronglyRegularToFA
                SymStateMap &SymToState) 
   {
 
-    LOG ("abstraction", 
+    LOG ("abstraction-mkFA", 
          cout << "reading word " << alpha 
          << " with size " << alpha.size() << endl);
 
     if (alpha.size() == 0)
     {
 
-      LOG ("abstraction", 
+      LOG ("abstraction-mkFA", 
            cout << "[make_fa] reading epsilon\n");
 
       dfa.eps_transition(q_0,q_1);
@@ -203,7 +203,7 @@ class StronglyRegularToFA
     else if (alpha.size () == 1 && alpha[0].isTerm ())
     {
 
-      LOG ("abstraction", 
+      LOG ("abstraction-mkFA", 
            cout << "[make_fa] (case A->a) reading " << alpha << endl);
 
       dfa.transition(q_0, alpha[0], q_1);
@@ -217,7 +217,7 @@ class StronglyRegularToFA
       vector<EdgeSym> gamma;
       gamma.push_back(alpha[0]);
 
-      LOG ("abstraction",
+      LOG ("abstraction-mkFA",
            cout << "[make_fa] (case A-> BC) reading " << gamma << " " 
            << beta << endl);
 
@@ -229,7 +229,7 @@ class StronglyRegularToFA
     {
       //assert(alpha.size() == 1 && isVar(alpha[0]));
 
-      LOG ("abstraction", 
+      LOG ("abstraction-mkFA", 
            cout << "[make_fa] (case A->B) reading " << alpha << endl);
 
       EdgeSym A =  alpha[0];	
@@ -237,7 +237,7 @@ class StronglyRegularToFA
       if (recursive[(*It).second] == NON_REC)
       {
 
-        LOG ("abstraction", 
+        LOG ("abstraction-mkFA", 
              cout << "[make_fa] A is not recursive\n ");
 
         for ( unsigned int ri = 0; ri < g.prods[A.symID()].size(); ri++ )
@@ -253,7 +253,7 @@ class StronglyRegularToFA
       if (recursive[(*It).second] == LEFT)
       {
 
-        LOG ("abstraction", 
+        LOG ("abstraction-mkFA", 
              cout << "[make_fa] A is marked as LEFT\n");
 
         // GroupSyms must be sorted
@@ -290,7 +290,7 @@ class StronglyRegularToFA
         // RIGHT or CYCLIC: code almost identical
         /////
 
-        LOG ("abstraction", 
+        LOG ("abstraction-mkFA", 
              cout << "[make_fa] A is marked as RIGHT/CYCLIC\n"); 
 
         vector<EdgeSym> GroupSyms = convert_ints_to_symbols(conn.group((*It).second));
@@ -303,7 +303,7 @@ class StronglyRegularToFA
             int r = g.prods[C.symID ()][ri].rule;
             vector<EdgeSym> RHS = g.rules[r];
 
-            LOG ("abstraction", cout << RHS << "   " );
+            LOG ("abstraction-mkFA", cout << RHS << "   " );
 
             if (!intersect_unorder_ord(RHS, GroupSyms))
               make_fa(q_C, RHS, q_1, SymToState);

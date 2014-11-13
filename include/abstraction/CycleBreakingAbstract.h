@@ -182,9 +182,9 @@ class CycleBreaking
       EdgeSym A( g.newVar () );
       g.prod(A, Rule::E ());
       new_non_terminals.insert(make_pair(group[nt], A));
-      LOG ("abstraction" , 
-           cout << "Added " << A << " -> e " <<  " from " 
-                << EdgeSym::mkVar(group[nt]) << "\n");
+      // LOG ("abstraction" , 
+      //      cout << "Added " << A << " -> e " <<  " from " 
+      //           << EdgeSym::mkVar(group[nt]) << "\n");
            
     }
     // iterate over each nonterminal in the mutually recursive group 
@@ -201,8 +201,8 @@ class CycleBreaking
       {
         vector<EdgeSym> r(g.rules[pi[ri].rule]);
 
-        LOG("abstraction", 
-            cout << "\tRule: "; Rule(r); cout << endl);
+        // LOG("abstraction", 
+        //     cout << "\tRule: "; Rule(r); cout << endl);
 
         cycle_breaking_transf_rule(g, 
                                    group[nt], 

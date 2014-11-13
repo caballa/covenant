@@ -47,6 +47,7 @@ int main (int argc, char** argv){
       ("dot,d" , 
        "print abstractions, witnesses, refinements and disjointness proof in dot format")
       ("verbose,v" , "verbose mode")
+      ("stats,s", "Show some statistics and exit")
       ("iter,i",  po::value<int>(&max_cegar_iter)->default_value(-1), 
        "maximum number of CEGAR iterations (default no limit)")
       ("abs,a",  po::value<AbstractMethod>(&abs)->default_value(CYCLE_BREAKING), 
@@ -164,12 +165,12 @@ int main (int argc, char** argv){
 
   if (problem.size() == 0)
   {
-    cerr << "covenant error: no CFGs found." << endl;  
+    cerr << "covenant: no CFGs found." << endl;  
     return 0;
   }
 
-  try{
-
+  try
+  {
     for(int ii = 0; ii < problem.size(); ii++)
     {
       CFGProblem::Constraint cn(problem[ii]);
@@ -178,14 +179,6 @@ int main (int argc, char** argv){
         throw error("expected at least one CFG");
       }
       cn.lang.check_well_formed();
-      
-      // #ifdef PROBLEM_DEBUG
-      //       cout << problem.var_name(cn.vars[0]);
-      //       for(unsigned int vi = 1; vi < cn.vars.size(); vi++)
-      //         cout<< "." << problem.var_name(cn.vars[vi]);
-      //       cout << " \\in " << endl;
-      //       cout << cn.lang << endl;
-      // #endif
     }
   }
   catch(error &e)
@@ -193,15 +186,21 @@ int main (int argc, char** argv){
     cerr << "covenant error:" << e << endl;
     return 0;
   }
-
-  // #ifdef PROBLEM_DEBUG
-  //   cout << "===============================================\n";
-  // #endif
     
-  reg_solver_t *solver = new Product<edge_sym_t>();
+  reg_solver_t *regsolver = new Product<edge_sym_t>();
   try
   {
-    solver_t s(problem, solver, opts);
+    solver_t s(problem, regsolver, opts);
+
+    s.preprocess ();
+
+    if (vm.count("stats"))
+    {
+      s.stats (cout);
+      delete regsolver;
+      return 0;
+    }
+
     STATUS res = s.solve();
 
     switch (res)
@@ -222,7 +221,7 @@ int main (int argc, char** argv){
   {
     cerr << "covenant error:" << e << endl;
   }
-  delete solver;
+  delete regsolver;
 
   return 0;
 }

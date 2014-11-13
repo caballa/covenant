@@ -104,39 +104,32 @@ namespace covenant {
 
     Rule(){ }
 
-    explicit Rule(const vector<Sym> &syms_)
-    {
-      this->syms.reserve (syms_.size ());
-      std::copy(syms_.begin (), syms_.end (), this->syms.begin ());
-    }
+    explicit Rule(const vector<Sym> &syms_): syms(syms_) { }
 
     // Make an epsilon rule
-    static Rule E () {
-      return Rule ();
-    }
+    static Rule E () { return Rule (); }
 
-    Rule& operator << (Sym s){
+    Rule& operator<< (Sym s)
+    {
       syms.push_back(s);
       return *this;
     }
     
-    Rule& operator << (int n){
+    Rule& operator<< (int n)
+    {
       syms.push_back(Sym::mkTerm(n));
       return *this;
     }
     
-    Sym& operator[](unsigned int i)
-    {
-      return this->syms[i];
-    }
+    Sym& operator[] (unsigned int i) { return this->syms[i]; }
 
-    bool operator == (const Rule &r) const 
+    bool operator== (const Rule &other) const 
     { 
-      if (r.syms.size() != this->syms.size()) 
+      if (other.syms.size() != this->syms.size()) 
         return false;
 
-      return equal(r.syms.begin(), 
-                   r.syms.end(), 
+      return equal(other.syms.begin(), 
+                   other.syms.end(), 
                    this->syms.begin());
     }
 
@@ -149,9 +142,7 @@ namespace covenant {
       else 
       {
         for( unsigned int i=0; i < r.syms.size(); i++ )
-        {
           o << r.syms[i] << " " ;
-        }
       }
       return o;
     }
@@ -411,19 +402,19 @@ namespace covenant {
       prod(newStart, Rule::E() << oldStart);
       setStart(newStart);      
 
-      LOG ("cfg", cout << "After adding new start: " << endl << *this);
+      LOG ("cfg-cnf", cout << "After adding new start: " << endl << *this);
 
       normalize();
 
-      LOG ("cfg", cout << "After normalization: " << endl << *this);
+      LOG ("cfg-cnf", cout << "After normalization: " << endl << *this);
 
       eliminateEpsilon();
 
-      LOG ("cfg", cout << "After epsilon elimination: " << endl << *this);
+      LOG ("cfg-cnf", cout << "After epsilon elimination: " << endl << *this);
 
       eliminateUnit();
       
-      LOG ("cfg", cout << "After unit elimination: " << endl << *this);
+      LOG ("cfg-cnf", cout << "After unit elimination: " << endl << *this);
 
       if (!IsCNF())
       {
@@ -526,6 +517,42 @@ namespace covenant {
         printProduction(o, vv);
       }
       return o;
+    }
+
+    void get_stats(unsigned& terminals,
+                   unsigned& nonterminals,
+                   unsigned& productions) const
+    {
+      terminals = alphsz;
+      nonterminals = prods.size ();
+      productions = 0;
+      for ( unsigned vv = 0; vv < prods.size(); ++vv)
+        productions += prods[vv].size();
+    }
+
+
+    void stats(ostream &o) const
+    {
+      o << "Number of terminals        : " << alphsz << "\n";
+      o << "Number of non-terminals    : " << prods.size () << "\n";
+
+      unsigned total_productions=0;
+      unsigned max_per_nonterminal=0;
+      for ( unsigned int vv = 0; vv < prods.size(); vv++ )
+      {
+        total_productions += prods[vv].size();
+        max_per_nonterminal = std::max(max_per_nonterminal, 
+                                       (unsigned) prods[vv].size ());
+      }
+
+      o << "Total number of productions: " << total_productions << "\n";
+      if (prods.size() > 0)
+      {
+        o << "Avg number of productions per non-terminal : " 
+          << float(total_productions) / float(prods.size ()) << "\n";
+        o << "Max number of productions per non-terminal : " 
+          << max_per_nonterminal << "\n";
+      }
     }
 
     friend ostream& operator<<(ostream &o, CFG cfg)

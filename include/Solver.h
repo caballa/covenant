@@ -123,6 +123,14 @@ class Solver: public boost::noncopyable {
   ofstream abstract_log; 
   ofstream proof_log; 
 
+  // True if all CFGs are regular languages
+  bool allCfgsReg;
+  // Sigma (all CFGs must have the same Sigma)
+  unsigned int alphstart;
+  unsigned int alphsz;
+
+  bool hasBeenPreprocessed;
+
   ////
   // Methods for implementing the CEGAR loop
   ////
@@ -265,7 +273,9 @@ class Solver: public boost::noncopyable {
 
   // Constructor of the class
   Solver(CFGProblem problem_, reg_solver_t *s, const Options opts_): 
-      problem(problem_), solver(s), opts(opts_)
+      problem (problem_), solver (s), opts (opts_), 
+      allCfgsReg (true), alphstart (0), alphsz (0),
+      hasBeenPreprocessed (false)
   {  
     if (opts.is_dot_enabled)
     {
@@ -286,6 +296,43 @@ class Solver: public boost::noncopyable {
     }
   }
 
+  void preprocess () 
+  {
+    if (hasBeenPreprocessed)
+      throw error ("CFGs should not been preprocessed more than once");
+
+    cfgs.clear();
+
+    exact.reserve(problem.size());
+    for(int ii = 0; ii < problem.size(); ii++)
+    {
+      CFGProblem::Constraint cst(problem[ii]);
+      // This must be done before we normalize the cfg.
+      const bool is_cfg_reg = cst.lang.isRegularGrammar();
+      exact.push_back(is_cfg_reg);
+      allCfgsReg &= is_cfg_reg;
+      cst.lang.normalize();
+      LOG("solver", 
+          cout << "After normalization:" << endl <<  cst.lang << endl;
+          cout << "===================================================\n");
+      cfgs.push_back(cst.lang);      
+    }
+    
+    shrink_alphabet(cfgs);
+
+#ifdef SANITY_CHECKS
+    // Ensure all cfgs have the same alphabet
+    for (unsigned int i=0;i<cfgs.size();i++)
+    {
+      const bool same_alph =  ( cfgs[i].alphstart == (int) alphstart &&
+                                cfgs[i].alphsz    == (int) alphsz );
+      if (!same_alph)
+        throw error("solver expects all the CFGs with same alphabet");
+    }
+#endif
+    hasBeenPreprocessed = true;
+  }
+
   // The solver implements a CEGAR loop. Since the intersection of CFGs
   // is an undecidable problem the solver may return "yes"
   // (ie. intersection not empty), "no" (i.e, intersection is empty) or
@@ -293,41 +340,13 @@ class Solver: public boost::noncopyable {
   STATUS solve()
   {
     
+    if (!hasBeenPreprocessed)
+      throw error ("CFGs must be normalized before solving");
+    
     witness_t witness;
     const bool REFINE_ONLY_FIRST = false;
-
     int iter=1;
-    cfgs.clear();
     
-    exact.reserve(problem.size());
-    bool all_cfgs_are_reg=true;
-    for(int ii = 0; ii < problem.size(); ii++)
-    {
-      CFGProblem::Constraint cn(problem[ii]);
-      // This must be done before we normalize the cfg.
-      const bool is_cfg_reg = cn.lang.isRegularGrammar();
-      exact.push_back(is_cfg_reg);
-      all_cfgs_are_reg &= is_cfg_reg;
-      cn.lang.normalize();
-      LOG("solver", 
-          cout << "After normalization:" << endl <<  cn.lang << endl;
-          cout << "===================================================\n");
-      cfgs.push_back(cn.lang);
-    }
-    
-    unsigned int alphstart;
-    unsigned int alphsz;
-    shrink_alphabet(cfgs, alphstart, alphsz);
-#ifdef SANITY_CHECKS
-    // Ensure all cfgs have the same alphabet
-    for (unsigned int i=0;i<cfgs.size();i++){
-      const bool same_alph =  ( cfgs[i].alphstart == (int) alphstart &&
-                                cfgs[i].alphsz    == (int) alphsz );
-      if (!same_alph)
-        throw error("solver expects all the CFGs with same alphabet");
-    }
-#endif
-
     reg_langs = abstraction(cfgs, exact, opts.abs);
     
     LOG ("solver", 
@@ -344,6 +363,7 @@ class Solver: public boost::noncopyable {
     ////
     // CEGAR loop
     ////
+
     int freq_incr_witness= opts.freq_incr_witness;
     while (true){
       if (opts.max_cegar_iter >= 0 && iter == opts.max_cegar_iter) 
@@ -398,7 +418,7 @@ class Solver: public boost::noncopyable {
         }
         return UNSAT;
       }
-      else if (all_cfgs_are_reg)
+      else if (allCfgsReg)
       {
         cout << witness_impl::to_string(witness) << endl;
         cout << "Found a real cex after " << iter << " iterations.\n";
@@ -422,6 +442,40 @@ class Solver: public boost::noncopyable {
     }
   }
 
+  // Show statistics about CFGs not really about the solver
+  void stats (ostream& o)
+  {
+    o << "========================================\n";
+    o << "               STATISTICS               \n";
+    o << "========================================\n";
+
+    unsigned productions = 0;
+    unsigned terminals = 0;
+    unsigned nonterminals = 0;
+    for (unsigned int i=0;i<cfgs.size();i++)
+    {
+      unsigned t,nt,p;
+      cfgs[i].get_stats(t, nt, p);
+      nonterminals += nt;
+      productions += p;
+      if (i ==0) terminals = t;
+    }
+    o << "Summary: " << endl;
+    o << "Total number of CFGs        : " << cfgs.size() << endl;
+    o << "Size of Sigma               : " << terminals << endl;
+    o << "Total number of nonterminals: " << nonterminals << endl;
+    o << "Total number of productions : " << productions << endl << endl;
+
+    for (unsigned int i=0;i<cfgs.size();i++)
+    {
+      o << "CFG " << i+1 << ":\n";
+      cfgs[i].stats(o);
+      o << endl;
+    }
+    o << endl;
+
+  }
+  
  private:
     
   // Count for all terminal symbols to make smaller the alphabet of the
@@ -429,9 +483,7 @@ class Solver: public boost::noncopyable {
   // finite automata operations.
   // POST: modify the attributes alphstart and alphsz from the
   // grammars but the production rules are not modified.
-  inline void shrink_alphabet(vector<CFG> &cfgs, 
-                              unsigned &alphstart, 
-                              unsigned &alphsz)
+  void shrink_alphabet(vector<CFG> &cfgs)
   {
     if (cfgs.empty())
       throw error("solver expects at least one CFG");
