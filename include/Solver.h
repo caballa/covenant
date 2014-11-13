@@ -61,6 +61,7 @@ namespace witness_impl
     dfa.accept(final);
     return dfa;
   }
+
 } // end namespace
 
 template<typename EdgeSym>
@@ -131,6 +132,8 @@ class Solver: public boost::noncopyable {
 
   bool hasBeenPreprocessed;
 
+  TermFactory tfac;
+
   ////
   // Methods for implementing the CEGAR loop
   ////
@@ -183,7 +186,8 @@ class Solver: public boost::noncopyable {
   {
 
     LOG ("solver", 
-         cout << "Witness found: " << witness_impl::to_string(witness) << "\n");
+         cout << "Witness found: ";
+         cout << witness_impl::to_string(witness, tfac) << "\n");
     
     if (opts.is_dot_enabled)
     {
@@ -307,18 +311,24 @@ class Solver: public boost::noncopyable {
     for(int ii = 0; ii < problem.size(); ii++)
     {
       CFGProblem::Constraint cst(problem[ii]);
+
       // This must be done before we normalize the cfg.
       const bool is_cfg_reg = cst.lang.isRegularGrammar();
       exact.push_back(is_cfg_reg);
       allCfgsReg &= is_cfg_reg;
       cst.lang.normalize();
+
       LOG("solver", 
           cout << "After normalization:" << endl <<  cst.lang << endl;
           cout << "===================================================\n");
+
       cfgs.push_back(cst.lang);      
     }
     
     shrink_alphabet(cfgs);
+    assert (!cfgs.empty ());
+
+    this->tfac = cfgs[0].getTermFactory ();
 
 #ifdef SANITY_CHECKS
     // Ensure all cfgs have the same alphabet
@@ -330,6 +340,7 @@ class Solver: public boost::noncopyable {
         throw error("solver expects all the CFGs with same alphabet");
     }
 #endif
+
     hasBeenPreprocessed = true;
   }
 
@@ -420,7 +431,7 @@ class Solver: public boost::noncopyable {
       }
       else if (allCfgsReg)
       {
-        cout << witness_impl::to_string(witness) << endl;
+        cout << witness_impl::to_string(witness, tfac) << endl;
         cout << "Found a real cex after " << iter << " iterations.\n";
         return SAT;
       }
@@ -428,7 +439,7 @@ class Solver: public boost::noncopyable {
       {
         if(!refine(witness, opts.gen, REFINE_ONLY_FIRST))
         {
-          cout << witness_impl::to_string(witness) << endl;
+          cout << witness_impl::to_string(witness, tfac) << endl;
           cout << "Found a real cex after " << iter << " iterations.\n";
           return SAT;
         }
@@ -490,6 +501,7 @@ class Solver: public boost::noncopyable {
     
     int min, max;
     cfgs[0].get_alphabet_min_and_max(min, max);    
+
     for (unsigned int i=1; i<cfgs.size(); i++)
     {
       int g_min, g_max;
@@ -497,8 +509,10 @@ class Solver: public boost::noncopyable {
       min = std::min(min, g_min);
       max = std::max(max, g_max);
     }
+
     alphstart = min;
     alphsz    = (max - min) + 1;
+
     // Shrink (if possible) all grammar's alphabets
     for (unsigned int i=0; i<cfgs.size(); i++)
     {

@@ -39,8 +39,10 @@ string parse_ident(In& input)
   return name;
 }
 
-template<class In>
-void parse_constraint(CFGProblem &p, In& input)
+template<class In, class TerminalFactory>
+void parse_constraint(CFGProblem &p, 
+                      In& input, 
+                      TerminalFactory tfac)
 {
   vector<int> vars;
   consume_blanks(input);
@@ -77,7 +79,7 @@ void parse_constraint(CFGProblem &p, In& input)
 
   input.chomp('('); // open cfg
   consume_blanks(input);
-  CFG lang = parse_cfg(input);
+  CFG lang = parse_cfg(input, tfac);
   input.chomp(')'); // close cfg
   consume_blanks(input);
 
@@ -91,9 +93,10 @@ void parse_constraint(CFGProblem &p, In& input)
   p.push(vars, lang);
 }
 
-template<class In>
-void parse_problem(CFGProblem& p, In& input)
+template<class In, class TerminalFactory>
+void parse_problem(CFGProblem& p, In& input, TerminalFactory tfac)
 {
+
   consume_blanks(input);
   while(!input.empty())
   {
@@ -112,7 +115,7 @@ void parse_problem(CFGProblem& p, In& input)
         throw error("make sure CFG is enclosed between parenthesis");
 
       consume_blanks(input);
-      parse_constraint(p, input);
+      parse_constraint(p, input, tfac);
       consume_blanks(input);
     }
   }

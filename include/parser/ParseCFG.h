@@ -44,10 +44,11 @@ void consume_comment(In& input)
   consume_blanks(input);
 }
 
-template<class In>
-CFG parse_cfg(In& input)
+template<class In, class TerminalFactory>
+CFG parse_cfg(In& input, TerminalFactory tfac)
 {
-  CFG g;
+  CFG g(tfac);
+
   NonTerminalMap mapping;
   parse_rules(input, g, mapping);
   if(input.empty()) return g;
@@ -131,6 +132,23 @@ int parse_hex(In& input)
   return val;
 }
 
+
+template<class In>
+std::string parse_string(In& input)
+{ 
+  std::string str;
+  char c;
+  while(!input.empty() && ( (c = input.peek()) != '\"'))
+  {
+    input.chomp ();
+    str.push_back (c);
+  }
+  if (!input.empty ())
+    input.chomp ();
+
+  return str;
+}
+
 template<class In>
 void parse_rule(In& input, CFG &g, NonTerminalMap &mapping)
 {
@@ -164,7 +182,7 @@ void parse_rule_rhs(In& input, CFG &g, Sym lhs, NonTerminalMap &mapping)
     input.chomp();
     consume_blanks(input);
     // epsilon transition
-    g.prod(lhs, Rule::E () );
+    g.prod(lhs, Rule::E (g.getTermFactory ()));
     return;
   }
 
@@ -182,13 +200,21 @@ void parse_rule_rhs(In& input, CFG &g, Sym lhs, NonTerminalMap &mapping)
       case ',':
         {
 	input.chomp();
-	Rule R;
+	Rule R (g.getTermFactory ());
 	for(unsigned i=0; i<ss.size(); i++)
           {
 	  R << ss[i];
 	}
 	g.prod(lhs, R);
 	ss.clear();
+        }
+        break;
+      case '\"':
+        {
+	input.chomp();
+          std::string str = parse_string(input);
+	Sym term = Sym::mkTerm( g.getTermFactory()->operator[](str));
+	ss.push_back(term);
         }
         break;
       case '\\':
@@ -212,7 +238,7 @@ void parse_rule_rhs(In& input, CFG &g, Sym lhs, NonTerminalMap &mapping)
   // last rule
   input.chomp(']');
   consume_blanks(input);
-  Rule R;
+  Rule R (g.getTermFactory ());
   for(unsigned i=0; i<ss.size(); i++)
   {
     R << ss[i];

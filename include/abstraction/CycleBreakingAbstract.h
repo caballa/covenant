@@ -180,7 +180,7 @@ class CycleBreaking
     {
       // add epsilon productions
       EdgeSym A( g.newVar () );
-      g.prod(A, Rule::E ());
+      g.prod(A, Rule::E (g.getTermFactory ()));
       new_non_terminals.insert(make_pair(group[nt], A));
       // LOG ("abstraction" , 
       //      cout << "Added " << A << " -> e " <<  " from " 
@@ -202,7 +202,7 @@ class CycleBreaking
         vector<EdgeSym> r(g.rules[pi[ri].rule]);
 
         // LOG("abstraction", 
-        //     cout << "\tRule: "; Rule(r); cout << endl);
+        //     cout << "\tRule: "; Rule(r, g.getTermFactory ()); cout << endl);
 
         cycle_breaking_transf_rule(g, 
                                    group[nt], 
@@ -224,7 +224,7 @@ class CycleBreaking
     vector<EdgeSym> terminal_symbols;
     bool finished = findNextNonTerminal (rule, group_set, 
                                          terminal_symbols, curr_nt);
-    Rule new_r;
+    Rule new_r (g.getTermFactory ());
     for(unsigned i=0; i< terminal_symbols.size(); i++)
       new_r << terminal_symbols[i];
       
@@ -258,7 +258,7 @@ class CycleBreaking
       terminal_symbols.clear();
       finished = findNextNonTerminal(rule, group_set, 
                                      terminal_symbols, curr_nt);
-      Rule new_rr;
+      Rule new_rr (g.getTermFactory ());
       for(unsigned i=0; i< terminal_symbols.size(); i++)
         new_rr << terminal_symbols[i];
       if (!finished)

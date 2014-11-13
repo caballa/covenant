@@ -2,6 +2,7 @@
 #define __CFG_H__
 
 #include <stack>
+#include <limits>
 
 #include <boost/unordered_map.hpp>
 
@@ -10,13 +11,8 @@
 
 using namespace std;
 
-// This is the number of terminal symbols for all the cfgs. For ASCII
-// should be 128 and for extended ASCII 256.
-const int ALPHA_START  = 0;   
-const int ALPHA_SZ     = 128; 
-
-namespace covenant {
-
+namespace covenant 
+{
 
   class Sym 
   {
@@ -61,9 +57,7 @@ namespace covenant {
     {
       o << "NT_" << symID();
     }
-
-    
-  };  /* end class Sym */
+  };  
 
   
   struct HashSym 
@@ -98,56 +92,89 @@ namespace covenant {
 
   class Rule 
   {
+
+    TermFactory _tfac;
+
    public:
 
-    vector<Sym> syms;
+    vector<Sym> _syms;
 
-    Rule(){ }
+    Rule (TermFactory tfac): 
+        _tfac (tfac) { }
 
-    explicit Rule(const vector<Sym> &syms_): syms(syms_) { }
+    explicit Rule (const vector<Sym> &syms, TermFactory tfac): 
+        _tfac (tfac), _syms(syms) { }
+
+    Rule (const Rule &other): 
+      _tfac(other._tfac), _syms(other._syms)  { }
+  
+    Rule& operator=(Rule other)
+    {
+      this->_tfac = other._tfac;
+      this->_syms = other._syms;
+      return *this;
+    }
 
     // Make an epsilon rule
-    static Rule E () { return Rule (); }
+    static Rule E (TermFactory tfac) 
+    { 
+      return Rule (tfac); 
+    }
+
+    TermFactory getTermFactory() {  return _tfac; }
 
     Rule& operator<< (Sym s)
     {
-      syms.push_back(s);
+      _syms.push_back(s);
       return *this;
     }
     
     Rule& operator<< (int n)
     {
-      syms.push_back(Sym::mkTerm(n));
+      _syms.push_back(Sym::mkTerm(n));
       return *this;
     }
     
-    Sym& operator[] (unsigned int i) { return this->syms[i]; }
+    Sym& operator[] (unsigned int i) { return _syms[i]; }
 
     bool operator== (const Rule &other) const 
     { 
-      if (other.syms.size() != this->syms.size()) 
+      if (other._syms.size() != this->_syms.size()) 
         return false;
 
-      return equal(other.syms.begin(), 
-                   other.syms.end(), 
-                   this->syms.begin());
+      return equal(other._syms.begin(), 
+                   other._syms.end(), 
+                   this->_syms.begin());
     }
 
     friend ostream& operator<<(ostream& o, Rule r)
     {
-      if( r.syms.size() == 0 )
+      if( r._syms.size() == 0 )
       { 
         o << "e"; 
       } 
       else 
       {
-        for( unsigned int i=0; i < r.syms.size(); i++ )
-          o << r.syms[i] << " " ;
+        TermFactory tfac = r.getTermFactory ();
+        assert (tfac);
+        for( unsigned int i=0; i < r._syms.size(); i++ )
+        {
+          if (r._syms[i].isVar ())
+          {
+            o << r._syms[i] << " " ;
+          }
+          else
+          {
+            // we apply the dictionary to output the corresponding
+            // string.
+            o << tfac->remap(r._syms[i].symID ()) << " " ;
+          }
+        }
       }
       return o;
     }
     
-  }; /* end class Rule */
+  }; 
 
 
   // FIXME: 
@@ -158,7 +185,6 @@ namespace covenant {
   {
 
     typedef boost::unordered_map<unsigned int, unsigned int> term_rule_map_t;
-
     term_rule_map_t TrackedTerms;
 
   public:
@@ -175,15 +201,27 @@ namespace covenant {
 
     vector< vector<ProdInfo> > prods; // Mapping var -> rule.
     vector< vector<Sym> > rules;      // The actual production rules.
-    
+
+    TermFactory _tfac;
+
   public:
 
-    CFG(): alphsz(ALPHA_SZ), alphstart(ALPHA_START), start(0){ }
+    CFG(TermFactory tfac): 
+        alphsz(std::numeric_limits<short int>::max ()), 
+        alphstart(0), 
+        start(0),
+       _tfac(tfac)
+    { }
 
-    CFG(int _alphsz): alphsz(_alphsz), alphstart(0), start(0) { }
+    CFG(int _alphsz, TermFactory tfac): 
+        alphsz(_alphsz), 
+        alphstart(0), 
+        start(0),
+        _tfac(tfac) 
+    { }
       
-    ~CFG(){ }
-    
+    TermFactory getTermFactory () { return _tfac; }
+
     Sym term(int i) 
     { 
       return Sym::mkTerm(i); 
@@ -218,7 +256,7 @@ namespace covenant {
     void prod(Sym LHS, const Rule& RHS)
     {
       int r_id = rules.size();
-      rules.push_back(RHS.syms); // Add the grammar rule
+      rules.push_back(RHS._syms); // Add the grammar rule
       prods[LHS.symID ()].push_back(ProdInfo(r_id)); // Update the mapping
     }
     
@@ -341,7 +379,7 @@ namespace covenant {
 	      //Add new production: do not add directly into the grammar
 	      //or infinite loop.
 	      newRules.push_back(make_pair(Sym::mkVar(vv),
-                                             Rule(*it1)));
+                                             Rule(*it1, _tfac)));
 	    }
 	  }
 	}
@@ -399,7 +437,7 @@ namespace covenant {
       // new start symbol
       Sym newStart = newVar();
       Sym oldStart = startSym();
-      prod(newStart, Rule::E() << oldStart);
+      prod(newStart, Rule::E(_tfac) << oldStart);
       setStart(newStart);      
 
       LOG ("cfg-cnf", cout << "After adding new start: " << endl << *this);
@@ -581,7 +619,7 @@ namespace covenant {
     {
       if (t.isVar ()) return t;
       Sym nt = newVar();
-      prod(nt, Rule::E() << t);
+      prod(nt, Rule::E(_tfac) << t);
       return nt;
     }
 
@@ -616,7 +654,7 @@ namespace covenant {
       assert( pos < rhs.size());
       if (rhs[pos].isTerm()) return rhs;
       Sym nt = newVar();
-      prod(nt, Rule::E() << rhs[pos]);
+      prod(nt, Rule::E(_tfac) << rhs[pos]);
       rhs[pos] = nt;
       return rhs;
     }
@@ -678,7 +716,7 @@ namespace covenant {
       for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
       {
         int r = prods[vv][ri].rule;
-        if (rhs == Rule (rules[r]))
+        if (rhs == Rule (rules[r], _tfac))
           return true;
       }
       return false;
@@ -715,7 +753,7 @@ namespace covenant {
       for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
       {
         int r = prods[vv][ri].rule;
-        new_rules.push_back(Rule(rules[r]));
+        new_rules.push_back(Rule(rules[r], _tfac));
       }
       return new_rules;
     }
@@ -767,12 +805,12 @@ namespace covenant {
         for(unsigned k=0; k < new_rules.size(); k++)
         {
           Rule r_k = new_rules[k];
-          //  cout << "Adding new rule: " << lhs << " -> " << r_k.syms << endl;
+          //  cout << "Adding new rule: " << lhs << " -> " << r_k._syms << endl;
           if (!isRedundantRule(lhs,r_k))
           {
             prod(lhs, r_k);  
-            if ( (r_k.syms.size() == 1) && (r_k.syms[0].isVar ()))
-              UnitRules.push_back(make_pair(vv,r_k.syms ));
+            if ( (r_k._syms.size() == 1) && (r_k._syms[0].isVar ()))
+              UnitRules.push_back(make_pair(vv,r_k._syms ));
           }
         }
       }
@@ -911,7 +949,7 @@ namespace covenant {
         { 
           o << "|"; 
         }
-        o << Rule(rules[prods[vv][ri].rule] );
+        o << Rule(rules[prods[vv][ri].rule], _tfac );
       }
       cout << endl;
     }

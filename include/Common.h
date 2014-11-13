@@ -7,9 +7,56 @@
 #include <set>
 #include <avy/AvyDebug.h>
 
+#include <boost/bimap/bimap.hpp>
+#include <boost/shared_ptr.hpp>
+
 namespace covenant {
 
 using namespace std;
+
+  class TerminalFactory
+  {
+        
+    typedef boost::bimaps::bimap<std::string, unsigned long> bimap_t;
+    
+    typedef bimap_t::left_iterator  left_iterator_t;
+    typedef bimap_t::right_iterator right_iterator_t;
+    
+    typedef boost::shared_ptr < bimap_t > bimap_ptr;
+
+    unsigned long _next_id;
+    bimap_ptr     _bimap;
+    
+   public:
+    
+    TerminalFactory(): 
+        _next_id(0), _bimap( new bimap_t ())  { }
+    
+    TerminalFactory(unsigned long start_id): 
+    _next_id(start_id), _bimap (new bimap_t ()) { }
+    
+    unsigned long operator[](std::string s) 
+    {
+      left_iterator_t it = _bimap->left.find(s);
+      if (it == _bimap->left.end()) 
+      {
+        unsigned long res = _next_id++;
+        _bimap->insert(bimap_t::value_type(s, res));
+        return res;
+      }
+      else 
+        return it->second;
+    }
+    
+    std::string remap (unsigned long t) 
+    {
+      right_iterator_t it = _bimap->right.find(t);
+      assert (it != _bimap->right.end());
+      return it->second;
+    }
+  }; 
+
+  typedef boost::shared_ptr <TerminalFactory> TermFactory;
 
   // Exception for internal errors
   class error {
@@ -80,22 +127,30 @@ using namespace std;
     return false;
   }
 
+
   // To represent a witness
   // Might be worthy to have a class for it.
   typedef std::vector<int> witness_t;
 
+
+
   namespace witness_impl
   {
-    inline string to_string(const witness_t& witness)
+    inline string to_string(const witness_t& witness, TermFactory tfac)
     {
-      stringstream ss;
+      if (witness.empty ()) // epsilon
+        return "\"\"";
+
+      stringstream ss;      
       for(unsigned int ii = 0; ii < witness.size(); ii++)
       {
-        ss << (char) witness[ii];
+        // ss << (char) witness[ii];
+        ss << tfac->remap (witness[ii]) << " ";
       }
       return ss.str();
     }
   } // end namespace
+
   
 } // end namespace covenant 
 

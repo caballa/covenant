@@ -153,9 +153,11 @@ int main (int argc, char** argv){
   CFGProblem problem;
   //StreamParse input(cin);
   StrParse input(in);
+  boost::shared_ptr<TerminalFactory> tfac (new TerminalFactory ());
+
   try
   {
-    parse_problem(problem, input);
+    parse_problem(problem, input, tfac);
   }
   catch(error &e)
   {
