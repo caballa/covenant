@@ -59,7 +59,8 @@ using namespace std;
   typedef boost::shared_ptr <TerminalFactory> TermFactory;
 
   // Exception for internal errors
-  class error {
+  class error 
+  {
     string _msg;
     error();
   public:
@@ -73,6 +74,24 @@ using namespace std;
       return o;
     }
   }; // class error
+
+  // Exception for termination causes but not considered as errors
+  class Exit
+  {
+    string _msg;
+    Exit();
+  public:
+    Exit(string msg): _msg(msg) { }
+    ostream& write(ostream& o)  {
+      o << this->_msg;
+      return o;
+    }
+    friend ostream& operator<<(ostream& o,  Exit e) {
+      e.write(o);
+      return o;
+    }
+  }; 
+
 
   template<typename T>
   inline ostream& operator<<(ostream& o, const set<T> &s) {

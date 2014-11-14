@@ -44,7 +44,7 @@ class SigmaStarAbstract: public Abstract<EdgeSym>
     bool is_not_empty    = min_dfa.eliminateDeadStates();
     if (!is_not_empty)
     {
-      throw error("Error during conversion from cfg to reg.");
+      throw Exit("One CFG is trivially empty.\n======\nUNSAT\n======");
     }
     
     return min_dfa;

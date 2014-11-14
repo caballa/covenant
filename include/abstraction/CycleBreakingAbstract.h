@@ -301,6 +301,7 @@ class CycleBreakingAbstract: public Abstract<EdgeSym>
 
   DFA<EdgeSym> do_abstraction(CFG &g, const bool is_regular)
   {
+    bool is_abs_done = false;
     DFA<EdgeSym> sfa (g.getTermFactory ());
     if (is_regular)
     {        
@@ -312,7 +313,7 @@ class CycleBreakingAbstract: public Abstract<EdgeSym>
     else
     {
       LOG( "verbose" , cout << "Applied cycle breaking abstraction.\n");
-
+      is_abs_done = true;
       CycleBreaking<EdgeSym> transformer;
       CFG str_reg_cfg = transformer.Approximate(g);
 
@@ -329,9 +330,12 @@ class CycleBreakingAbstract: public Abstract<EdgeSym>
     DFA<EdgeSym> dfa     = sfa.makeDFA (g.alphstart, g.alphsz);
     DFA<EdgeSym> min_dfa = dfa.minimize (g.alphstart, g.alphsz);
     bool is_not_empty    = min_dfa.eliminateDeadStates();
-    if (!is_not_empty) 
+    if (!is_not_empty)
     {
-      throw error("during abstraction from cfg to reg.");
+      if  (!is_abs_done) 
+        throw Exit("One CFG is trivially empty.\n======\nUNSAT\n======");
+      else
+        throw Exit("One CFG is empty after abstraction.\n======\nUNSAT\n======");
     }
     return min_dfa;
   }

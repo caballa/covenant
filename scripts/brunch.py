@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Script to run benchmarks (used by regression tests)
+"""
+
 import os
 import os.path
 import sys

@@ -56,26 +56,23 @@ grammar production is considered the start symbol of the grammar. In
 the above example the start symbols are `S1` and `S2`, respectively.
 
 Terminal symbols must be between double quotes (i.e.,
-`""`). Everything else that is not between double quotes will be
-interpreted as non-terminal symbols.
+`""`). Any symbol that is not between double quotes will be
+interpreted as a non-terminal symbol.
 
-Each grammar production is of the form `NT -> [ ... ];` where `...` is a sequence of
-any nonterminal and terminal symbol separated by one or more
-blanks. We also allow `NT -> [ ... , ... ];` to represent two grammar
-productions with the same lhs NT. That is,  `A  -> [ "a" S2 "a", "b" S2 "b" ];` 
+Each grammar production is of the form `A -> [ ... ];` where `A` is a nonterminal 
+and `...` is a sequence of any nonterminal or terminal symbol separated by one or 
+more blanks. We also allow `A -> [ ... , ... ];` to express two grammar
+productions with the same left-hand side A. That is,  `A  -> [ "a" S2 "a", "b" S2 "b" ];` 
 is syntactic sugar for `A  -> [ "a" S2 "a"]; A ->[ "b" S2 "b" ];`
  
-Note that all the rhs of the grammar productions must ends up with the symbol `;`
+Note that all the right-hand side of the productions must ends up with the symbol `;`
 except the last one.
 
 If we wrap the above example into a file test.cfg and try
 `build/tools/covenant test.cfg`, we should obtain:
 
-`Finished after 4 cegar iterations.
-======
-UNSAT
-======
-`
+`Finished after 4 cegar iterations.   
+ UNSAT`
 
 #People#
 

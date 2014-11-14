@@ -223,6 +223,11 @@ int main (int argc, char** argv){
   {
     cerr << "covenant error:" << e << endl;
   }
+  catch(Exit &e)
+  {
+    cerr << e << endl;
+  }
+
   delete regsolver;
 
   return 0;
