@@ -27,6 +27,8 @@ If ninja is installed then try instead:
 - `cmake -G Ninja ..`
 - `ninja`
 
+The code has been tested only for X86_64 with clang++ 3.2 and g++ 4.8
+
 #Usage#
 
 `build/tools/covenant --help` 
@@ -71,8 +73,9 @@ except the last one.
 If we wrap the above example into a file test.cfg and try
 `build/tools/covenant test.cfg`, we should obtain:
 
-`Finished after 4 cegar iterations.   
- UNSAT`
+`Finished after 4 cegar iterations.`   
+
+` UNSAT`
 
 #People#
 
