@@ -181,6 +181,7 @@ namespace covenant
   // - make Sym a template parameter
   // - replace the use of vector<Sym> with Rule
   // - make private class attributes 
+  //  - use iterators to traverse grammar productions
   class CFG 
   {
 
@@ -206,20 +207,48 @@ namespace covenant
 
   public:
 
-    CFG(TermFactory tfac): 
+    CFG (TermFactory tfac): 
         alphsz(std::numeric_limits<short int>::max ()), 
         alphstart(0), 
         start(0),
        _tfac(tfac)
     { }
 
-    CFG(int _alphsz, TermFactory tfac): 
+    CFG (int _alphsz, TermFactory tfac): 
         alphsz(_alphsz), 
         alphstart(0), 
         start(0),
         _tfac(tfac) 
     { }
-      
+
+    CFG (const CFG& other): 
+      TrackedTerms (other.TrackedTerms),
+      alphsz(other.alphsz), alphstart(other.alphstart), start(other.start),
+      prods (other.prods), rules (other.rules), _tfac(other._tfac) { }
+
+    CFG& operator=(CFG other)
+    {
+      if (this != &other)
+      {
+        TrackedTerms  = other.TrackedTerms;
+        alphsz = other.alphsz;
+        alphstart = other.alphstart;
+        start = other.start;
+        prods  = other.prods;
+        rules = other.rules;
+        _tfac = other._tfac;
+      }
+      return *this;
+    }
+                           
+
+    ~CFG () 
+    {
+      prods.clear ();
+      rules.clear ();
+      TrackedTerms.clear ();
+    }
+    
     TermFactory getTermFactory () { return _tfac; }
 
     Sym term(int i) 
@@ -227,11 +256,11 @@ namespace covenant
       return Sym::mkTerm(i); 
     }
 
-    Sym newVar(void)
+    Sym newVar()
     {
       int id = prods.size();
-      prods.push_back( vector<ProdInfo>() );
-      return Sym::mkVar(id);
+      prods.push_back( vector<ProdInfo>());
+      return Sym::mkVar (id);
     }
     
     void setStart(Sym s)
@@ -270,45 +299,36 @@ namespace covenant
       {
 	for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
           {
-	  int r = prods[vv][ri].rule;
+	  const int r = prods[vv][ri].rule;
 
-	  // Special cases if rhs is of size 1 or 2
-	  // lhs of the production appears on the rhs
-	  if (rules[r].size() == 1 && rules[r][0].isVar() && 
-	      rules[r][0] == Sym::mkVar(vv))
+            // Step 1: at most two symbols in each production
+            vector<Sym> nr(2);
+            while( rules[r].size() > 2 )
             {
-	    rules[r] = replaceNonTerminal(rules[r],0);
-	  }
-	  // lhs of the production appears on the rhs
-	  else if (rules[r].size() == 2)
-            {
-	    if (rules[r][0].isVar () && rules[r][0] == Sym::mkVar(vv))
-	      rules[r] = replaceNonTerminal(rules[r],0);
-	    if (rules[r][1].isVar () && rules[r][1] == Sym::mkVar(vv))
-	      rules[r] = replaceNonTerminal(rules[r],1);
-	  }	  
-	  else
-            {
-	    // Ensure there are at most two symbols in each production
-	    vector<Sym> nr(2);
-	    while( rules[r].size() > 2 )
-              {
-	      Sym next( newVar() );
-	      nr[1] = replaceTerminal(rules[r].back());
-	      rules[r].pop_back();
-	      nr[0] = replaceTerminal(rules[r].back());
-	      rules[r].pop_back();
-	      rules[r].push_back(next);
-	      rules.push_back(nr);
-	      prods[next.symID ()].push_back(ProdInfo(rules.size()-1));
-	    }
-	  }
-            if (!(rules[r].size() <= 2))
-              throw error("CFG is not normalized (|RHS| <=2)");
+              Sym next( newVar() );
+              nr[1] = replaceTerminal(rules[r].back());
+              rules[r].pop_back();
+              nr[0] = replaceTerminal(rules[r].back());
+              rules[r].pop_back();
+              rules[r].push_back(next);
+              rules.push_back(nr);
+              prods[next.symID ()].push_back(ProdInfo(rules.size()-1));
+            }
 
-	  // This ensures that only nonterminal symbols
+            // Step 2: lhs of the production does not appear on the rhs
+            vector<Sym> SymVec(rules[r]);
+            replaceNonTerminal (SymVec, Sym::mkVar(vv));
+            rules[r] = SymVec;
+
+            assert (rules[r].size() <= 2);
+            
+	  // Step 3: production of length 2 cannot have nonterminals
 	  if (rules[r].size() == 2)
-	    rules[r] = lazyReplaceTerminal(rules[r]);
+            {
+              vector<Sym> SymVec(rules[r]);
+              replaceTwoUnitWithMemoing (SymVec);
+              rules [r] = SymVec;
+            }
 
 	} // end inner for 
       } // end outer for      
@@ -323,7 +343,7 @@ namespace covenant
       {
         for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           if (RHS.size() == 1 && RHS[0].isTerm())
             terminals.push_back(RHS[0].symID());
@@ -340,7 +360,7 @@ namespace covenant
       set<Sym> NullableSymbols;
       for ( unsigned int vv = 0; vv < prods.size(); vv++ ){
 	for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ ){
-	  int r = prods[vv][ri].rule;
+	  const int r = prods[vv][ri].rule;
 	  if (rules[r].size() == 0) { // epsilon rule
 	    Sym nt = Sym::mkVar(vv);
 	    NullableSymbols.insert(nt);
@@ -361,7 +381,7 @@ namespace covenant
       {
 	for( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
           {
-	  int r = prods[vv][ri].rule;
+	  const int r = prods[vv][ri].rule;
 	  vector<Sym> OldRHS = rules[r];
 	  // Add indirect epsilon rules
 	  if ((OldRHS.size() == 1) &&  
@@ -399,12 +419,13 @@ namespace covenant
     // Return true if the grammar rules are in Chomsky Normal Form. 
     // That is, if all rules are of the form either A -> BC, or S ->
     // epsilon, or A -> alpha.
-    bool IsCNF() const {
+    bool IsCNF() const 
+    {
       for ( unsigned int vv = 0; vv < prods.size(); vv++ )
       {
         for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           // We only allow S -> epsilon where S is start symbol
           if( RHS.size() == 0 && (startSym() != Sym::mkVar(vv)))
@@ -473,7 +494,7 @@ namespace covenant
         {
           for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
           {
-            int r = prods[vv][ri].rule;
+            const int r = prods[vv][ri].rule;
             vector<Sym> RHS = rules[r];
             bool allSatisfy=true;
             for(unsigned si =0; (si < RHS.size() && allSatisfy) ; si++)
@@ -508,7 +529,6 @@ namespace covenant
     {
       bool error=false;
       ostringstream error_msg;
-      string error_header();
       if (prods.size() == 0)
       {
         error=true;
@@ -527,7 +547,7 @@ namespace covenant
       {
         for ( unsigned int ri = 0; (ri < prods[vv].size() && !error); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           if (RHS.size() == 0) continue;
           for (unsigned k=0; ( k < RHS.size() && !error) ;k++)
@@ -604,90 +624,86 @@ namespace covenant
 
    private:
 
-    // To replace terminals with nonterminal from rules of the form:
-    // A -> aB, ... , C -> a  with   A -> CB, ..., C -> a
-    void recordTerminalSymbols(Sym t, unsigned int lhs)
-    {
-      if (t.isTerm ())
-      {
-        term_rule_map_t::iterator It = TrackedTerms.find(t.symID ());
-        if (It == TrackedTerms.end()) 
-          TrackedTerms.insert(make_pair(t.symID (),lhs));
-      }
-    }
-
     // Replace a terminal with a fresh nonterminal symbol
-    Sym replaceTerminal(Sym t)
+    Sym replaceTerminal (Sym t)
     {
       if (t.isVar ()) return t;
+
       Sym nt = newVar();
-      prod(nt, Rule::E(_tfac) << t);
+      prod (nt, Rule::E(_tfac) << t);
       return nt;
     }
 
     // Replace a terminal with a nonterminal but trying to reuse an
     // existing nonterminal before creating a fresh one.
-    inline Sym lazyReplaceTerminal(Sym t)
+    Sym replaceTerminalWithMemoing(Sym t)
     {
       if (t.isVar ()) return t;
+    
       term_rule_map_t::iterator It = TrackedTerms.find(t.symID ());
       if (It != TrackedTerms.end())
         return Sym::mkVar((*It).second);
       else
       {
         Sym nt = replaceTerminal(t);
-        recordTerminalSymbols(t, nt.symID ());
+        TrackedTerms.insert(make_pair(t.symID (), nt.symID ()));
         return nt;
       }
     }
 
     // Replace a terminal with a fresh nonterminal symbol
-    vector<Sym> lazyReplaceTerminal(vector<Sym> rhs)
+    void replaceTwoUnitWithMemoing(vector<Sym> & SymVec)
     {
-      vector<Sym> new_rhs;      
-      new_rhs.push_back(lazyReplaceTerminal(rhs[0]));
-      new_rhs.push_back(lazyReplaceTerminal(rhs[1]));
-      return new_rhs;
+      assert(SymVec.size () == 2);
+      Sym a(SymVec[0]);
+      Sym b(SymVec[1]);
+
+      SymVec.clear ();
+      SymVec.push_back (replaceTerminalWithMemoing (a));
+      SymVec.push_back (replaceTerminalWithMemoing (b));
     }
 
-    // replace a nonterminal with a fresh nonterminal symbol
-    vector<Sym> replaceNonTerminal(vector<Sym> rhs, unsigned int pos)
+    // replace a nonterminal with a fresh nonterminal
+    void replaceNonTerminal (vector<Sym> &SymVec, Sym s)
     {
-      assert( pos < rhs.size());
-      if (rhs[pos].isTerm()) return rhs;
-      Sym nt = newVar();
-      prod(nt, Rule::E(_tfac) << rhs[pos]);
-      rhs[pos] = nt;
-      return rhs;
+      for (unsigned int i=0; i<SymVec.size (); ++i)
+      {
+        if (SymVec [i].isVar () && (SymVec [i] == s))
+        {
+          Sym FreshNonTerm = newVar();
+          prod (FreshNonTerm, Rule::E (_tfac) << SymVec [i]);
+          SymVec [i] = FreshNonTerm;
+        }
+      }
     }
 
     vector<unsigned>  
-    getNullablePositions(const vector<Sym> &rhs, 
+    getNullablePositions(const vector<Sym> &SymVec, 
                          const set<Sym> &NullableSymbols)
     {
       vector<unsigned> positions;
-      for (unsigned i=0; i < rhs.size() ; i++)
+      for (unsigned i=0; i < SymVec.size() ; i++)
       {		
-        if (NullableSymbols.count(rhs[i]) > 0)
+        if (NullableSymbols.count(SymVec[i]) > 0)
           positions.push_back(i);
       }
       return positions;
     }
 
     set<vector<Sym> > 
-    replaceNullableSymbol(const vector<Sym> &OldRHS,
+    replaceNullableSymbol(const vector<Sym> &SymVec,
                           const set<Sym> &NullableSymbols)
     {
       typedef pair <vector<Sym>, vector<unsigned> > SymPosPair;
       
       set<vector<Sym> > newRules;
-      vector<unsigned> 
-	positions = getNullablePositions(OldRHS, NullableSymbols);
+      vector<unsigned> positions = getNullablePositions(SymVec, NullableSymbols);
+	
       if (positions.empty()) // no symbols with epsilon rules
 	return newRules;
 
       vector<SymPosPair> worklist;
-      worklist.push_back(make_pair(OldRHS,positions));
+      worklist.push_back(make_pair(SymVec,positions));
       // BCB where B->epsilon produces {BCB, BC, C, CB}
       while (!worklist.empty())
       {
@@ -717,7 +733,7 @@ namespace covenant
       unsigned vv = lhs.symID ();
       for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
       {
-        int r = prods[vv][ri].rule;
+        const int r = prods[vv][ri].rule;
         if (rhs == Rule (rules[r], _tfac))
           return true;
       }
@@ -734,9 +750,11 @@ namespace covenant
     // rules[3] = b
     void removeRule(unsigned i, unsigned j )
     {
-      int r = prods[i][j].rule;
+      const int r = prods[i][j].rule;
+
       remove(prods[i],j);
       remove(rules, r);
+
       // update the mappings in prods
       for ( unsigned int vv = 0; vv < prods.size(); vv++ )
       {
@@ -754,7 +772,7 @@ namespace covenant
       vector<Rule> new_rules;
       for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
       {
-        int r = prods[vv][ri].rule;
+        const int r = prods[vv][ri].rule;
         new_rules.push_back(Rule(rules[r], _tfac));
       }
       return new_rules;
@@ -767,7 +785,7 @@ namespace covenant
       {
 	for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
           {
-	  int r = prods[vv][ri].rule;
+	  const int r = prods[vv][ri].rule;
 	  vector<Sym> unit_rule = rules[r];
 	  if ((unit_rule.size() == 1) && unit_rule[0].isVar ())
 	    UnitRules.push_back(make_pair(vv,unit_rule));
@@ -823,7 +841,7 @@ namespace covenant
       {
         for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> unit_rule = rules[r];
           if ((unit_rule.size() == 1) && unit_rule[0].isVar ())
           {
@@ -845,7 +863,7 @@ namespace covenant
         int vv = s.symID();
         for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           is_term &= isAllTerminal(RHS); 
         }
@@ -864,7 +882,7 @@ namespace covenant
       {
         for ( unsigned int ri = 0; (ri < prods[vv].size() && is_left); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           unsigned int size = RHS.size();
           if (size == 0) 
@@ -891,7 +909,7 @@ namespace covenant
       {
         for ( unsigned int ri = 0; (ri < prods[vv].size() && is_right); ri++ )
         {
-          int r = prods[vv][ri].rule;
+          const int r = prods[vv][ri].rule;
           vector<Sym> RHS = rules[r];
           unsigned int size = RHS.size();
           if (size == 0) 
@@ -926,7 +944,7 @@ namespace covenant
         {
           for ( unsigned int ri = 0; ri < prods[vv].size(); ri++ )
           {
-            int r = prods[vv][ri].rule;
+            const int r = prods[vv][ri].rule;
             vector<Sym> RHS = rules[r];
             if (ReachSet.count(Sym::mkVar(vv)) > 0){
               for(unsigned si =0; si < RHS.size(); si++)

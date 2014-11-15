@@ -57,5 +57,6 @@ namespace avy
 //              llvm::cl::ValueRequired, llvm::cl::ZeroOrMore);
 
 #else
+void avy::AvyEnableLog (std::string x) { }
 #endif
 

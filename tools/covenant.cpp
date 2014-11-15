@@ -34,34 +34,41 @@ int main (int argc, char** argv){
   unsigned incr_witness;
   // Other flags
   bool is_dot_enabled=false;
+  unsigned num_solutions;
 
   string header("Covenant: semi-decider for intersection of context-free languages\n");
   header += string ("Authors : G.Gange, J.A.Navas, P.Schachte, H.Sondergaard, and P.J.Stuckey\n");
   header += string ("Usage   : covenant [Options] file");
 
-  po::options_description config("Options");
+  po::options_description config("General options ");
 
   config.add_options()
       ("input-file,f",  po::value<string>(), "input file")
       ("help,h", "print help message")
       ("dot,d" , 
-       "print abstractions, witnesses, refinements and disjointness proof in dot format")
+       "print solutions and emptiness proofs in dot format as well as the result of abstractions and refinements")
       ("verbose,v" , "verbose mode")
       ("stats,s", "Show some statistics and exit")
+      ("solutions" , po::value<unsigned>(&num_solutions)->default_value(1), 
+       "enumerate up to n solutions (default n=1)")
       ("iter,i",  po::value<int>(&max_cegar_iter)->default_value(-1), 
        "maximum number of CEGAR iterations (default no limit)")
       ("abs,a",  po::value<AbstractMethod>(&abs)->default_value(CYCLE_BREAKING), 
        "choose abstraction method [sigma-star|cycle-breaking]")
       ("gen,g",  po::value<GeneralizationMethod>(&gen)->default_value(GREEDY), 
        "choose generalization method [greedy|max-gen]")
-      ("l",  po::value<int>(&shortest_witness)->default_value(1), 
+      ;
+ 
+  po::options_description cegar_config("(unsound) cegar options ");
+
+  cegar_config.add_options()
+      ("l",  po::value<int>(&shortest_witness)->default_value(0), 
        "shortest length of the witness (default 0)")
       ("freq-incr-witness",  po::value<int>(&freq_incr_witness)->default_value(-1), 
        "how often increasing witnesses' length")
       ("delta-incr-witness",  po::value<unsigned>(&incr_witness)->default_value(1), 
        "how much witnesses' length is incremented")
       ;
- 
 
   po::options_description log("Logging Options");
   log.add_options()
@@ -70,6 +77,7 @@ int main (int argc, char** argv){
 
   po::options_description cmmdline_options;
   cmmdline_options.add(config).add(log);
+  cmmdline_options.add(cegar_config);
 
   po::positional_options_description p;
   p.add("input-file", -1);
@@ -91,7 +99,7 @@ int main (int argc, char** argv){
 
   if (vm.count("help"))
   {
-    std::cout << header << endl << config << endl;
+    cout << header << endl << config << endl; 
     return 0;
   }  
 
@@ -122,16 +130,16 @@ int main (int argc, char** argv){
     return 0;
   }
 
+  if (vm.count("dot"))
+  {
+    is_dot_enabled = true;
+  }
+
   if (vm.count("verbose"))
   {
     avy::AvyEnableLog ("verbose");
   }
 
-  if (vm.count("dot"))
-  {
-    is_dot_enabled = true;
-  }
-      
   // enable loggers
   if (vm.count("log"))
   {
@@ -148,7 +156,8 @@ int main (int argc, char** argv){
                          is_dot_enabled, 
                          shortest_witness, 
                          freq_incr_witness, 
-                         incr_witness);
+                         incr_witness,
+                         num_solutions);
 
   CFGProblem problem;
   //StreamParse input(cin);

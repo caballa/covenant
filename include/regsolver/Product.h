@@ -22,93 +22,101 @@ class Product: public RegSolver<EdgeSym>
 
   typedef typename RegSolver<EdgeSym>::dfa_t dfa_t;
 
-  bool found_empty_string;
-
  public:
 
-  Product(): found_empty_string(false) {}
+  Product() {}
 
   witness_t intersection(const vector<dfa_t> &reg_langs, 
-                         unsigned int alphstart, 
-                         unsigned int alphsz,
+                         unsigned int alphstart, unsigned int alphsz,
                          const int shortest_witness, 
                          bool &result)
   {      
 
+    if (reg_langs.empty())
+      throw error("regular solver expects at least one regular language");
+
+
     // Special case: all languages accept empty language
-    if (!found_empty_string && allAcceptEpsilon(reg_langs))
+    if (allAcceptEpsilon(reg_langs) && shortest_witness == 0)
     {
       result = true;
       return witness_t();
     }
 
-    if (reg_langs.empty())
-    {
-      throw error("regular solver expects at least one regular language");
-    }
-
-    if (reg_langs.size() < 2)
+    if (reg_langs.size() == 1 && shortest_witness == 0)
     {
       result=true;
       return findShortestWitness(reg_langs[0],reg_langs[0].startState().id);
     }
 
-    if (shortest_witness > 1)
+    boost::optional<dfa_t> inter;
+    if (shortest_witness >= 1)
     {
-      // We generate an automata A that recognizes only strings with
-      // length >= shortest_witness. Then, we intersect the input
-      // automata with A.
-      vector<dfa_t> reg_langs_copy;
-      for(unsigned i=0; i < reg_langs.size(); i++)
-      {
-        reg_langs_copy.push_back(reg_langs[i]);
-      }
-
-      assert(!reg_langs.empty ());
+      vector<dfa_t> reg_langs_copy(reg_langs);
       TermFactory tfac = reg_langs [0]. getTermFactory ();
-
-      dfa_t fa = gen_sigma_ge_length(shortest_witness, alphstart, alphsz, tfac);
-      reg_langs_copy.push_back(fa);
-
-
-      boost::optional<dfa_t> tmp_inter = intersect_all(reg_langs_copy, 
-                                                       alphstart, 
-                                                       alphsz);
-      if (tmp_inter)
-      {
-        result = true;
-        return findShortestWitness(*tmp_inter,(*tmp_inter).startState().id);
-      }
-      else
-      {
-        // if we cannot find a witness of length >= shortest_witness
-        // then we try again from scratch with the original input
-        // automata before we can claim the intersection is empty.
-        boost::optional<dfa_t>  inter = intersect_all(reg_langs, 
-                                                      alphstart, 
-                                                      alphsz);
-        result = (inter ? true : false);
-
-        if (!inter)
-          return witness_t ();
-        else
-          return findShortestWitness(*inter,(*inter).startState().id);
-      }
+      reg_langs_copy.push_back(gen_sigma_ge_length(shortest_witness, 
+                                                   alphstart, alphsz, 
+                                                   tfac));
+      inter = intersect_all(reg_langs_copy, alphstart, alphsz);
     }
     else
-    {
+      inter = intersect_all(reg_langs, alphstart, alphsz);
+    
+    result = (inter ? true : false);
+    if (!inter)
+      return witness_t ();
+    else
+      return findShortestWitness(*inter,(*inter).startState().id);
+    
+    // if (shortest_witness < 1)
+    // {
+    //   boost::optional<dfa_t> inter = intersect_all(reg_langs, 
+    //                                                alphstart, 
+    //                                                alphsz);
+      
+    //   result = (inter ? true : false);
+    //   if (!inter)
+    //     return witness_t ();
+    //   else
+    //     return findShortestWitness(*inter,(*inter).startState().id);
+    // }
+    // else 
+    // {
 
-        boost::optional<dfa_t>  inter = intersect_all(reg_langs, 
-                                                      alphstart, 
-                                                      alphsz);
+    //   // We generate an automata A that recognizes only strings whose
+    //   // length is greater or equal than shortest_witness and we
+    //   // intersect the bunch of automata with A.
 
-        result = (inter ? true : false);
+    // vector<dfa_t> reg_langs_copy(reg_langs);
+    //   TermFactory tfac = reg_langs [0]. getTermFactory ();
+    //   dfa_t fa = gen_sigma_ge_length(shortest_witness, alphstart, alphsz, tfac);
+    //   reg_langs_copy.push_back(fa);
 
-        if (!inter)
-          return witness_t ();
-        else
-          return findShortestWitness(*inter,(*inter).startState().id);
-    }
+
+    //   boost::optional<dfa_t> tmp_inter = intersect_all(reg_langs_copy, 
+    //                                                    alphstart, 
+    //                                                    alphsz);
+    //   if (tmp_inter)
+    //   {
+    //     result = true;
+    //     return findShortestWitness(*tmp_inter,(*tmp_inter).startState().id);
+    //   }
+    //   else
+    //   {
+    //     // if we cannot find a witness of length >= shortest_witness
+    //     // then we try again from scratch with the original input
+    //     // automata before we can claim the intersection is empty.
+    //     boost::optional<dfa_t>  inter = intersect_all(reg_langs, 
+    //                                                   alphstart, 
+    //                                                   alphsz);
+    //     result = (inter ? true : false);
+
+    //     if (!inter)
+    //       return witness_t ();
+    //     else
+    //       return findShortestWitness(*inter,(*inter).startState().id);
+    //   }
+    // }
   }
     
  private:
@@ -204,10 +212,10 @@ class Product: public RegSolver<EdgeSym>
       it = witness.insert(it, pi[q].second);
       q = p;
     }
+
     if (witness.empty()) 
-    {
       throw error("regular solver returned an empty witness!");
-    }
+
     return witness; 
   }
 

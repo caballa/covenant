@@ -21,6 +21,8 @@
 
 namespace covenant {
 
+using namespace std;
+
   namespace DFA_impl{
 
      // Data structure for hashing SFA states.
@@ -34,8 +36,8 @@ namespace covenant {
        } StateEntry;
        
        struct HashEntry {
-         std::size_t operator()(const StateEntry* x) const{
-           std::size_t res = 0;
+         size_t operator()(const StateEntry* x) const{
+           size_t res = 0;
            for(unsigned int i = 0; i < x->sz; i++){
              boost::hash<const unsigned int> hasher;
              boost::hash_combine(res, hasher(x->data[i]));
@@ -222,7 +224,7 @@ namespace covenant {
 
   inline State mkState(int id) { State p; p.id = id; return p; }
 
-  inline std::ostream& operator<<(std::ostream& o, State s) 
+  inline ostream& operator<<(ostream& o, State s) 
   {
     o << s.id;
     return o;
@@ -255,9 +257,9 @@ namespace covenant {
     }
 
     int start;
-    std::vector< std::vector<Edge> > trans; // The state transitions.
-    std::vector< std::vector<int> > eps;    // Epsilon transitions
-    std::vector<bool> accepts;
+    vector< vector<Edge> > trans; // The state transitions.
+    vector< vector<int> > eps;    // Epsilon transitions
+    vector<bool> accepts;
 
     DFA(TermFactory tfac) : _tfac(tfac), start( 0 ) { }
     
@@ -275,8 +277,8 @@ namespace covenant {
     {
       while((int) trans.size() <= i)
       {
-        trans.push_back(std::vector<Edge>());
-        eps.push_back(std::vector<int>());
+        trans.push_back(vector<Edge>());
+        eps.push_back(vector<int>());
         accepts.push_back(false);
       }
       return mkState(i);
@@ -305,7 +307,7 @@ namespace covenant {
     void transition(State s, const V& val, State r) 
     {
       while( s.id >= trans.size() )
-        trans.push_back( std::vector<Edge>() );
+        trans.push_back( vector<Edge>() );
       
       trans[s.id].push_back( mk_edge(val, r.id) );
     }
@@ -320,7 +322,7 @@ namespace covenant {
     inline bool has_transition(State src, State dest, V val )
     {
       assert( src.id < (unsigned) nStates());
-      std::vector<Edge> &ts( trans[src.id] );
+      vector<Edge> &ts( trans[src.id] );
       for(unsigned int j=0; j < ts.size(); j++){
         if (ts[j].dest == dest.id && ts[j].val == val)
           return true;
@@ -328,7 +330,7 @@ namespace covenant {
       return false;
     }
     
-    std::ostream& write(std::ostream &o)
+    ostream& write(ostream &o) const
     {
       o << "[" << start << " => ";
       bool first = true;
@@ -343,10 +345,11 @@ namespace covenant {
           o << ai;
         }
       }
-      o << "]" << std::endl;
+      o << "]" << endl;
       for( unsigned int ss = 0; ss < trans.size(); ss++ )
       {
-        std::vector<Edge>& ts( trans[ss] );
+        //vector<Edge>& ts( trans[ss] );
+        vector<Edge> ts( trans[ss] );
         o << ss << " [";
 
         for( unsigned int ti = 0; ti < ts.size(); ti++ )
@@ -361,7 +364,8 @@ namespace covenant {
         }
         o << "]";
         
-        std::vector<int>& es( eps[ss] );
+        //vector<int>& es( eps[ss] );
+        vector<int> es( eps[ss] );
         if(es.size() > 0)
         {
 	  o << "[e -> ";
@@ -370,29 +374,28 @@ namespace covenant {
             o << ", " << es[ei];
           o << "]";
         }
-        o << std::endl;
+        o << endl;
       }
       return o;
     }
 
     // Print the automata in dot format
-    std::ostream& print_dot(std::ostream& o, std::string label) 
+    ostream& print_dot(ostream& o, string label) const
     {
-
       static unsigned int sfa_key=0;
       sfa_key++;
-      o << "digraph " << "sfa_" << sfa_key << "{" << std::endl;
-      o << "label = \"" << label << "\";" << std::endl;
-      o << "rankdir=LR;" << std::endl;
-      o << "node [shape = point ] qi;" << std::endl;
+      o << "digraph " << "sfa_" << sfa_key << "{" << endl;
+      o << "label = \"" << label << "\";" << endl;
+      o << "rankdir=LR;" << endl;
+      o << "node [shape = point ] qi;" << endl;
       for (int i=0; i < nStates() ; i++)
       {
         if (accepts[i])
-          o << "node [shape = doublecircle ] " << "q" << i << ";" << std::endl;
+          o << "node [shape = doublecircle ] " << "q" << i << ";" << endl;
         else
-          o << "node [shape = circle ] " << "q" << i << ";" << std::endl;
+          o << "node [shape = circle ] " << "q" << i << ";" << endl;
       }
-      o << "qi" << " -> " << "q" << startState().id << std::endl;
+      o << "qi" << " -> " << "q" << startState().id << endl;
       for( unsigned int ss = 0; ss < trans.size(); ss++ )
       {
         for( unsigned int ti = 0; ti < trans[ss].size(); ti++ )
@@ -403,15 +406,15 @@ namespace covenant {
             o << trans[ss][ti].val; 
           else
             o << _tfac->remap (trans[ss][ti].val.symID ());
-          o << "\"];" << std::endl;
+          o << "\"];" << endl;
         }
         for(unsigned int ei = 0; ei < eps[ss].size(); ei++)
         {
           o << "q" << ss << " -> " << "q" << eps[ss][ei] 
-            << " [label=e];" << std::endl;
+            << " [label=e];" << endl;
         }
       }
-      o << "}" << std::endl;
+      o << "}" << endl;
       return o;
     }
 
@@ -457,10 +460,10 @@ namespace covenant {
       // Determine the set of edges introduced by the epsilon transitions
       // Why do it this way? So we don't include multiple copies when there is a chain
       // of epsilon transitions.
-      std::vector< std::vector<Edge> > eps_induced;
+      vector< vector<Edge> > eps_induced;
       for(int ii = 0; ii < nStates(); ii++)
       {
-        eps_induced.push_back(std::vector<Edge>());
+        eps_induced.push_back(vector<Edge>());
         for(unsigned int ei = 0; ei < eps[ii].size(); ei++)
         {
           // Update accept states
@@ -1165,7 +1168,7 @@ namespace covenant {
   }; // end class DFA
 
   template<class V>
-  inline std::ostream& operator<<(std::ostream& o, DFA<V> dfa) 
+  inline ostream& operator<<(ostream& o, DFA<V> dfa) 
   {
     return dfa.write(o);
   }
@@ -1176,12 +1179,12 @@ namespace covenant {
   int max_minpath(DFA<V>& dfa)
   {
     // The set of inverted edges.
-    std::vector< std::vector<int> > inverse(dfa.nStates());
+    vector< vector<int> > inverse(dfa.nStates());
 
     // Breadth-first queue of states to be processed
     SparseSet<> queue(dfa.nStates());
     // Distance from state i to an accept
-    std::vector<int> dist(dfa.nStates(), -1);
+    vector<int> dist(dfa.nStates(), -1);
 
     for(unsigned int si = 0; si < dfa.trans.size(); si++)
     {
@@ -1202,7 +1205,7 @@ namespace covenant {
     {
       int si = queue[qi];
       int sd = dist[si];
-      std::vector<int> state_inv(inverse[si]);
+      vector<int> state_inv(inverse[si]);
       for(unsigned int ei = 0; ei < state_inv.size(); ei++)
       {
         if(!queue.elem(state_inv[ei]))

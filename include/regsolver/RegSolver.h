@@ -22,6 +22,7 @@ class RegSolver
 
  public:
 
+  virtual ~RegSolver () { }
   virtual witness_t intersection(const vector<dfa_t>& reg_langs, 
                                  unsigned int alphstart, 
                                  unsigned int alphsz,

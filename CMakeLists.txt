@@ -2,6 +2,17 @@ project(covenant)
 
 cmake_minimum_required (VERSION 2.8.11)
 
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE G++_VERSION)
+if (G++_VERSION VERSION_LESS 4.7)
+   message (FATAL_ERROR "${CMAKE_CXX_COMPILER} version should be >= 4.7.")
+else ()
+add_definitions(-Wno-unused-local-typedefs)
+endif()
+endif ()
+
+add_definitions(-std=c++11)
+
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message (FATAL_ERROR "In-source builds are not allowed. Please clean your source tree and try again.")
 endif()
@@ -23,10 +34,6 @@ find_package (Boost 1.55.0 COMPONENTS program_options REQUIRED)
 IF (Boost_FOUND)
   include_directories (${Boost_INCLUDE_DIRS})
 endif ()
-
-#add_definitions(-std=c++11)
-#add_definitions(-Wno-redeclared-class-member -Wno-sometimes-uninitialized)
-#add_definitions(-Wno-unused-local-typedefs)
 
 ## This should be enabled until stable version
 add_definitions(-DSANITY_CHECKS)

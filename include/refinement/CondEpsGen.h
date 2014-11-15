@@ -197,7 +197,7 @@ namespace covenant {
 
     ~CondEpsGen() { }
 
-    TermFactory getTermFactory () const { return _tfac; }
+    TermFactory getTermFactory () { return _tfac; }
 
     // Returns true if the language is empty
     bool addEpsTrans(int qi, int qj)

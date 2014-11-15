@@ -9,6 +9,7 @@
 
 #include <boost/bimap/bimap.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace covenant {
 
@@ -21,6 +22,9 @@ using namespace std;
     
     typedef bimap_t::left_iterator  left_iterator_t;
     typedef bimap_t::right_iterator right_iterator_t;
+
+    typedef bimap_t::left_const_iterator  left_const_iterator_t;
+    typedef bimap_t::right_const_iterator right_const_iterator_t;
     
     typedef boost::shared_ptr < bimap_t > bimap_ptr;
 
@@ -33,7 +37,7 @@ using namespace std;
         _next_id(0), _bimap( new bimap_t ())  { }
     
     TerminalFactory(unsigned long start_id): 
-    _next_id(start_id), _bimap (new bimap_t ()) { }
+        _next_id(start_id), _bimap (new bimap_t ()) { }
     
     unsigned long operator[](std::string s) 
     {
@@ -48,11 +52,13 @@ using namespace std;
         return it->second;
     }
     
-    std::string remap (unsigned long t) 
+    string remap (unsigned long t) const
     {
-      right_iterator_t it = _bimap->right.find(t);
-      assert (it != _bimap->right.end());
-      return it->second;
+      right_const_iterator_t it = _bimap->right.find(t);
+      if (it != _bimap->right.end())
+        return it->second;
+      else 
+        return "anonymous_" + boost::lexical_cast<string> (t);
     }
   }; 
 
@@ -113,7 +119,8 @@ using namespace std;
 
   // Some templates to common operations on containers
   template <typename T>
-  void remove(vector<T>& vec, size_t pos){
+  void remove(vector<T>& vec, size_t pos)
+  {
     assert(pos < vec.size() && "Out-of-bounds access");
     typename vector<T>::iterator it = vec.begin();
     advance(it, pos);
@@ -121,7 +128,8 @@ using namespace std;
   }
 
   template <typename T>
-  void remove_duplicates(vector<T>& vec){
+  void remove_duplicates(vector<T>& vec)
+  {
     sort(vec.begin(), vec.end());
     vec.erase(unique(vec.begin(), vec.end()), vec.end());
   }

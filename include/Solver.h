@@ -33,11 +33,11 @@ enum STATUS { SAT, UNSAT, UNKNOWN};
 namespace witness_impl
 {
   template<typename EdgeSym>
-  inline DFA<EdgeSym> to_automata(const witness_t &witness, 
-                                  TermFactory tfac)
+  DFA<EdgeSym> to_automata(const witness_t &witness, 
+                           TermFactory tfac)
   {
     if (witness.empty())
-      throw error("regular solver returned an empty witness!");
+      throw error("should not convert an empty witness to automata");
 
     DFA<EdgeSym> dfa (tfac);
     State start, final;
@@ -66,7 +66,8 @@ namespace witness_impl
 } // end namespace
 
 template<typename EdgeSym>
-class Solver: public boost::noncopyable {
+class Solver: public boost::noncopyable 
+{
 
  public:
 
@@ -74,7 +75,7 @@ class Solver: public boost::noncopyable {
   typedef DFA<EdgeSym>                   dfa_t;
   typedef CFGDigest<EdgeSym>             cfg_digest_t;
   typedef CondEpsGen<EdgeSym>            cond_eps_gen_t;
-  typedef SigmaStarAbstract<EdgeSym>     sigma_start_abs_t;
+  typedef SigmaStarAbstract<EdgeSym>     sigma_star_abs_t;
   typedef CycleBreakingAbstract<EdgeSym> cycle_breaking_abs_t;
   typedef EpsRefine<EdgeSym>             eps_refine_t;
   typedef MaxEpsRefine<EdgeSym>          max_eps_refine_t;
@@ -82,15 +83,6 @@ class Solver: public boost::noncopyable {
 
   struct Options
   {
-    Options(int o1, GeneralizationMethod o2, AbstractMethod o3,
-            bool o4=false, int o5=1, int o6=-1, unsigned o7=1):
-        max_cegar_iter(o1),
-        gen(o2), 
-        abs(o3),
-        is_dot_enabled(o4),
-        shortest_witness(o5),
-        freq_incr_witness(o6),
-        incr_witness(o7){ } 
     int max_cegar_iter;
     GeneralizationMethod gen;
     AbstractMethod abs;
@@ -98,6 +90,21 @@ class Solver: public boost::noncopyable {
     int  shortest_witness;
     int  freq_incr_witness;
     unsigned incr_witness;
+    unsigned num_solutions;
+
+    Options(int max_cegar, 
+            GeneralizationMethod gen_m, AbstractMethod abs_m,
+            bool is_dot, 
+            int shortest, int freq, unsigned incr, 
+            unsigned solutions):
+        max_cegar_iter(max_cegar),
+        gen(gen_m), 
+        abs(abs_m),
+        is_dot_enabled(is_dot),
+        shortest_witness(shortest),
+        freq_incr_witness(freq),
+        incr_witness(incr),
+        num_solutions(solutions) { } 
   };
 
 
@@ -135,6 +142,8 @@ class Solver: public boost::noncopyable {
 
   TermFactory tfac;
 
+  // boost::shared_ptr<dfa_t> sigma_star_dfa;
+
   ////
   // Methods for implementing the CEGAR loop
   ////
@@ -157,7 +166,7 @@ class Solver: public boost::noncopyable {
       {
         case SIGMA_STAR: 
           {
-            sigma_start_abs_t alpha; 
+            sigma_star_abs_t alpha; 
             fa = alpha.do_abstraction(cfgs[i], is_regular[i]);
           }
           break;
@@ -171,11 +180,11 @@ class Solver: public boost::noncopyable {
       if (opts.is_dot_enabled)
       {
         fa.print_dot(abstract_log, 
-                     std::string ("Initial Regular Approximation of CFG ") + 
+                     string ("Initial Regular Approximation of CFG ") + 
                      boost::lexical_cast<string> (i));          
       }
 
-      LOG ("solver", cout << "Approximated Finite Automata:\n" << fa);
+      LOG("solver", cout << "Approximated Finite Automata:\n" << fa);
       fas.push_back(fa);
     }
     return fas;
@@ -187,21 +196,20 @@ class Solver: public boost::noncopyable {
               bool REFINE_ONLY_FIRST) 
   {
 
-    LOG ("solver", 
-         cout << "Witness found: ";
-         cout << witness_impl::to_string(witness, tfac) << "\n");
+    LOG("solver", 
+        cout << "Solution found: ";
+        cout << witness_impl::to_string(witness, tfac) << "\n");
     
     if (opts.is_dot_enabled)
     {
       dfa_t cex = witness_impl::to_automata<EdgeSym>(witness, tfac);
       cex.print_dot(refine_log, "Cex ") ;
     }
-
-    
+   
     // Choose here the generalization method.
     eps_refine_t* r = NULL;
     if(gen == MAX_GEN)
-      r = new max_eps_refine_t(cfgs[0].alphstart, cfgs[0].alphsz);
+      r = new max_eps_refine_t(alphstart, alphsz);
     else 
       r = new greedy_eps_refine_t();
     
@@ -211,7 +219,7 @@ class Solver: public boost::noncopyable {
       // L_i is regular, so w \in L_i
       if(exact[li]) 
       {
-        LOG ("verbose" , std::cout << "Automata " << li << " is exact\n");
+        LOG("verbose" , cout << "Automata " << li << " is exact\n");
         continue;
       }
       
@@ -219,7 +227,7 @@ class Solver: public boost::noncopyable {
       cond_eps_gen_t gen(digests[li], witness, tfac);
       if(!gen.is_empty())
       {
-        LOG ("verbose", std::cout << "Cex is accepted by CFG " << li << "\n");
+        LOG("verbose", cout << "Cex is accepted by CFG " << li << "\n");
         continue;
       }
       
@@ -259,18 +267,22 @@ class Solver: public boost::noncopyable {
       
       reg_langs[li] = *refined_fa;
  
-      LOG ("solver", 
-           cout << "New refined regular approximation:\n" << *refined_fa << "\n");
+      LOG("solver", 
+            cout << "New refined regular approximation:\n" << *refined_fa << "\n");
            
 
 //#endif
       refined = true;
-      LOG ("verbose", std::cout << "Automata " << li << " refined.\n");
+      LOG("verbose", cout << "Automata " << li << " refined.\n");
       if(REFINE_ONLY_FIRST)
         break;
     }
     
     delete r;
+    
+    LOG("solver", 
+         cout << "Refinement done.\n";
+         cout << "===================================================\n");
     
     return refined;
   }
@@ -343,6 +355,19 @@ class Solver: public boost::noncopyable {
     }
 #endif
 
+    // if (opts.num_solutions > 1)
+    // {
+    //   sigma_star_dfa = boost::shared_ptr<dfa_t>(new dfa_t(tfac));
+    //   State q0 = sigma_star_dfa->state(0);
+    //   sigma_star_dfa->setStart(q0);
+    //   sigma_star_dfa->accept(q0);
+    //   sigma_star_dfa->eps_transition(q0,q0); 
+    //   for (unsigned i=alphstart; i<alphstart+alphsz; i++)
+    //     sigma_star_dfa->transition(q0,EdgeSym::mkTerm(i), q0);
+    //   sigma_star_dfa->eps_elim ();
+    //   *sigma_star_dfa = sigma_star_dfa->makeDFA (alphstart, alphsz);
+    // }
+
     hasBeenPreprocessed = true;
   }
 
@@ -352,7 +377,7 @@ class Solver: public boost::noncopyable {
   // run forever.
   STATUS solve()
   {
-    
+
     if (!hasBeenPreprocessed)
       throw error ("CFGs must be normalized before solving");
     
@@ -362,14 +387,14 @@ class Solver: public boost::noncopyable {
     
     reg_langs = abstraction(cfgs, exact, opts.abs);
     
-    LOG ("solver", 
+    LOG("solver", 
          cout << "Initial regular approximations done." << endl;
          cout << "===================================================\n");
     
     for(unsigned int li = 0; li < cfgs.size(); li++)
       digests.push_back(cfg_digest_t(cfgs[li]));
 
-    LOG ("solver", 
+    LOG("solver", 
          cout << "CFG digests computed." << endl;
          cout << "===================================================\n");
 
@@ -377,13 +402,14 @@ class Solver: public boost::noncopyable {
     // CEGAR loop
     ////
 
+    int num_solutions = opts.num_solutions;
     int freq_incr_witness= opts.freq_incr_witness;
-    while (true){
+
+    while (true)
+    {
       if (opts.max_cegar_iter >= 0 && iter == opts.max_cegar_iter) 
         return UNKNOWN;
 
-      LOG( "verbose" , 
-           cout << "Checking intersection of regular approximations ...\n");
 
       // solver between regular languages
       // pre: automata do no have epsilon transitions
@@ -391,21 +417,28 @@ class Solver: public boost::noncopyable {
 
       // This increases the length of the witnesses so we don't get
       // stuck
-
       int shortest_witness = opts.shortest_witness; 
 
-      if (freq_incr_witness == 0)
-      {
-        shortest_witness += opts.incr_witness;
-        LOG( "verbose", cout << "Searching for witnesses of length " 
-                             << shortest_witness << endl); 
-        freq_incr_witness = opts.freq_incr_witness;
-      }
-      else if (freq_incr_witness > 0)
+      LOG( "verbose" , 
+           cout << "Checking intersection of regular approximations ...\n");
+
+      // By default freq_incr_witness == -1 so this code is not
+      // executed
+      if (freq_incr_witness > 0)
       {
         freq_incr_witness--;
       }
+      else if (freq_incr_witness == 0)
+      {
+        shortest_witness += opts.incr_witness;
 
+        LOG( "verbose", 
+             cout << "Searching for solution of length "; 
+             cout << shortest_witness << endl); 
+
+        freq_incr_witness = opts.freq_incr_witness;
+      }
+      
       witness = solver->intersection(reg_langs, 
                                      alphstart, 
                                      alphsz,
@@ -418,7 +451,7 @@ class Solver: public boost::noncopyable {
 
       if (!sat_query)
       {
-        LOG( "verbose", cout << "Intersection of regular approximations is empty!\n");
+        LOG("verbose", cout << "Intersection of regular approximations is empty!\n");
         cout << "Finished after " << iter << " cegar iterations.\n";
         if (opts.is_dot_enabled)
         {
@@ -431,25 +464,44 @@ class Solver: public boost::noncopyable {
         }
         return UNSAT;
       }
-      else if (allCfgsReg)
+
+      if( allCfgsReg || 
+          !refine(witness, opts.gen, REFINE_ONLY_FIRST))
       {
+        cout << "Found a solution after " << iter << " iterations:\n";
         cout << witness_impl::to_string(witness, tfac) << endl;
-        cout << "Found a real cex after " << iter << " iterations.\n";
-        return SAT;
-      }
-      else
-      {
-        if(!refine(witness, opts.gen, REFINE_ONLY_FIRST))
+
+        if (num_solutions <= 1)
         {
-          cout << witness_impl::to_string(witness, tfac) << endl;
-          cout << "Found a real cex after " << iter << " iterations.\n";
           return SAT;
         }
-      }
+        else
+        {
 
-      LOG ("solver", 
-           cout << "Refinement done.\n";
-           cout << "===================================================\n");
+          if (witness.empty ())
+          {
+            assert (opts.shortest_witness == 0);
+            opts.shortest_witness++; //to remove empty string
+          }
+          else
+          {
+            dfa_t cex = witness_impl::to_automata<EdgeSym>(witness, tfac);      
+            
+            LOG("solver", 
+                 cout << "Added the complement of " << cex << ":" << endl);
+            
+            cex = cex.makeDFA (alphstart, alphsz);
+            cex.complement ();
+            
+            LOG("solver", cout << cex << endl);
+            
+            exact.push_back (true);
+            reg_langs.push_back (cex);
+          }
+
+          num_solutions--;
+        }
+      }
 
       iter++;
     }
@@ -522,7 +574,6 @@ class Solver: public boost::noncopyable {
       cfgs[i].alphsz    = alphsz;
     }
   }
-
 };
 
 } // end namespace covenant
