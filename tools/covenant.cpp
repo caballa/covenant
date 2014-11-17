@@ -15,37 +15,35 @@ using namespace covenant;
 
 namespace po = boost::program_options;
 
-int main (int argc, char** argv){
-
+int main (int argc, char** argv)
+{
   typedef Sym edge_sym_t;
   typedef Solver<edge_sym_t> solver_t;
   typedef RegSolver<edge_sym_t> reg_solver_t;
 
   // Main flags
-  int max_cegar_iter;
-  GeneralizationMethod gen;
-  AbstractMethod abs;
+  int max_cegar_iter=-1;
+  GeneralizationMethod gen = GREEDY;
+  AbstractMethod abs = CYCLE_BREAKING;
   // Heuristics flags
   // - regular solver will try to find a witness starting from this length
-  int shortest_witness;
+  int shortest_witness = 0;
   // - increase the witness length after n iterations -1 disable this option.
-  int freq_incr_witness;
+  int freq_incr_witness = -1;
   // - increment the witness length by n but only if freq_incr_witness >= 0
-  unsigned incr_witness;
+  unsigned incr_witness = 1;
   // Other flags
   bool is_dot_enabled=false;
-  unsigned num_solutions;
+  unsigned num_solutions = 1;
 
   string header("Covenant: semi-decider for intersection of context-free languages\n");
   header += string ("Authors : G.Gange, J.A.Navas, P.Schachte, H.Sondergaard, and P.J.Stuckey\n");
   header += string ("Usage   : covenant [Options] file");
 
   po::options_description config("General options ");
-
   config.add_options()
-      ("input-file,f",  po::value<string>(), "input file")
       ("help,h", "print help message")
-      ("dot,d" , 
+      ("dot" , 
        "print solutions and emptiness proofs in dot format as well as the result of abstractions and refinements")
       ("verbose,v" , "verbose mode")
       ("stats,s", "Show some statistics and exit")
@@ -58,10 +56,14 @@ int main (int argc, char** argv){
       ("gen,g",  po::value<GeneralizationMethod>(&gen)->default_value(GREEDY), 
        "choose generalization method [greedy|max-gen]")
       ;
- 
-  po::options_description cegar_config("(unsound) cegar options ");
 
-  cegar_config.add_options()
+  po::options_description hidden_params("");
+  hidden_params.add_options()
+      ("input-file",  po::value<string>(), "input file")
+      ;
+      
+  po::options_description cegar_params("(unsound) cegar options ");
+  cegar_params.add_options()
       ("l",  po::value<int>(&shortest_witness)->default_value(0), 
        "shortest length of the witness (default 0)")
       ("freq-incr-witness",  po::value<int>(&freq_incr_witness)->default_value(-1), 
@@ -75,12 +77,14 @@ int main (int argc, char** argv){
       ("log",  po::value<std::vector<string> >(), "Enable specified log level")
       ;
 
-  po::options_description cmmdline_options;
-  cmmdline_options.add(config).add(log);
-  cmmdline_options.add(cegar_config);
-
   po::positional_options_description p;
   p.add("input-file", -1);
+
+  po::options_description cmmdline_options;
+  cmmdline_options.add(config);
+  cmmdline_options.add(hidden_params);
+  cmmdline_options.add(cegar_params);
+  cmmdline_options.add(log);
   
   po::variables_map vm;
 
@@ -160,10 +164,8 @@ int main (int argc, char** argv){
                          num_solutions);
 
   CFGProblem problem;
-  //StreamParse input(cin);
-  StrParse input(in);
+  StrParse input(in); 
   boost::shared_ptr<TerminalFactory> tfac (new TerminalFactory ());
-
   try
   {
     parse_problem(problem, input, tfac);

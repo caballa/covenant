@@ -33,11 +33,17 @@ enum STATUS { SAT, UNSAT, UNKNOWN};
 namespace witness_impl
 {
   template<typename EdgeSym>
-  DFA<EdgeSym> to_automata(const witness_t &witness, 
-                           TermFactory tfac)
+  DFA<EdgeSym> to_automata(const witness_t &witness, TermFactory tfac)
   {
     if (witness.empty())
-      throw error("should not convert an empty witness to automata");
+    {
+      DFA<EdgeSym> dfa (tfac);
+      State start = dfa.state(0);
+      State final = dfa.state(1);
+      dfa.setStart(start);
+      dfa.accept(final);
+      return dfa;
+    }
 
     DFA<EdgeSym> dfa (tfac);
     State start, final;
@@ -196,15 +202,19 @@ class Solver: public boost::noncopyable
               bool REFINE_ONLY_FIRST) 
   {
 
+
     LOG("solver", 
         cout << "Solution found: ";
         cout << witness_impl::to_string(witness, tfac) << "\n");
     
     if (opts.is_dot_enabled)
     {
-      dfa_t cex = witness_impl::to_automata<EdgeSym>(witness, tfac);
-      cex.print_dot(refine_log, "Cex ") ;
+      witness_t tmp(witness);
+      dfa_t Cex = witness_impl::to_automata<EdgeSym> (tmp, tfac);
+                                                      
+      Cex.print_dot(refine_log, "Cex ");
     }
+
    
     // Choose here the generalization method.
     eps_refine_t* r = NULL;
