@@ -10,6 +10,8 @@ implements a CEGAR-based schema which might not terminate. Covenant
 implements several refinement techiques. One of these refinements is
 complete if the CFLs are regularly separable.
 
+Read this [technical report](docs/covenant-tr.pdf) for details.
+
 #Prerequisites#
 
 - Boost is required. It is recommended version 1.55 or newer
@@ -71,9 +73,9 @@ Note that all the right-hand side of the productions must ends up with the symbo
 except the last one.
 
 If we wrap the above example into a file test.cfg and try
-`build/tools/covenant test.cfg`, we should obtain:
+`build/tools/covenant test.cfg`, you should obtain:
 
-`Finished after 4 cegar iterations.`   
+`Finished after 5 cegar iterations.`   
 
 ` UNSAT`
 
