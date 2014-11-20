@@ -10,7 +10,7 @@ implements a CEGAR-based schema which might not terminate. Covenant
 implements several refinement techiques. One of these refinements is
 complete if the CFLs are regularly separable.
 
-Read this [technical report](http://people.eng.unimelb.edu.au/gkgange/pubs/cfg_preprint.pdf) for details.
+Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
 
 #Prerequisites#
 
