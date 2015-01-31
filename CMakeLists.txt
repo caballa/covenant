@@ -21,7 +21,8 @@ endif()
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #set(CMAKE_CXX_FLAGS "-g -O3 -Wall -Wno-non-virtual-dtor -Wno-unused-function -Wno-deprecated -ffast-math")
-set(CMAKE_CXX_FLAGS "-g -O3 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -Wall")
+#set(CMAKE_EXE_LINKER_FLAGS "-pg")
 
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
@@ -33,6 +34,14 @@ set (Boost_USE_STATIC_LIBS ON)
 find_package (Boost 1.55.0 COMPONENTS program_options REQUIRED)
 IF (Boost_FOUND)
   include_directories (${Boost_INCLUDE_DIRS})
+endif ()
+
+add_definitions(-std=c++11)
+add_definitions(-Wno-redeclared-class-member -Wno-sometimes-uninitialized)
+add_definitions(-Wno-covered-switch-default)
+
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+add_definitions( -Wno-unused-local-typedefs)
 endif ()
 
 ## This should be enabled until stable version

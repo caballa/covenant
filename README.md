@@ -29,7 +29,7 @@ If ninja is installed then try instead:
 - `cmake -G Ninja ..`
 - `ninja`
 
-The code has been tested only for X86_64 with clang++ 3.2 and g++ 4.8
+The code has been tested only for x86_64 with clang++ 3.2 and g++ 4.8
 
 #Usage#
 
