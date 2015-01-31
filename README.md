@@ -10,7 +10,7 @@ implements a CEGAR-based schema which might not terminate. Covenant
 implements several refinement techiques. One of these refinements is
 complete if the CFLs are regularly separable.
 
-Read this [technical report](http://people.eng.unimelb.edu.au/gkgange/pubs/cfg_preprint.pdf) for details.
+Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
 
 #Prerequisites#
 
@@ -29,7 +29,7 @@ If ninja is installed then try instead:
 - `cmake -G Ninja ..`
 - `ninja`
 
-The code has been tested only for x86_64 with clang++ 3.2 and g++ 4.8
+The code has been tested only for X86_64 with clang++ 3.2 and g++ 4.8
 
 #Usage#
 
@@ -86,3 +86,7 @@ If we wrap the above example into a file test.cfg and try
 * Peter Schachte
 * Harald Sondergaard
 * Peter J. Stuckey
+
+#Publications#
+
+- "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. To appear in NFM'15
