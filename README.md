@@ -86,3 +86,7 @@ If we wrap the above example into a file test.cfg and try
 * Peter Schachte
 * Harald Sondergaard
 * Peter J. Stuckey
+
+#Publications#
+
+- "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. To appear in NFM'15.
