@@ -7,7 +7,7 @@ Intersection of Context-Free Languages
 Covenant is a tool for testing emptiness of a set of context free
 languages (CFLs). Since this problem is undecidable, Covenant
 implements a CEGAR-based schema which might not terminate. Covenant
-implements several refinement techiques. One of these refinements is
+implements several refinement techniques. One of these refinements is
 complete if the CFLs are regularly separable.
 
 Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
@@ -20,20 +20,14 @@ Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
 #Installation#
 
 - `mkdir build && cd build`
-- `cmake ..`
-- `make`
-
-If ninja is installed then try instead:
-
-- `mkdir build && cd build`
-- `cmake -G Ninja ..`
-- `ninja`
+- `cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ..`
+- `cmake --build . --target install`
 
 The code has been tested only for X86_64 with clang++ 3.2 and g++ 4.8
 
 #Usage#
 
-`build/tools/covenant --help` 
+`my_install_dir/bin/covenant --help` 
 
 We describe the format of the CFLs through an example:
 
@@ -73,11 +67,17 @@ Note that all the right-hand side of the productions must ends up with the symbo
 except the last one.
 
 If we wrap the above example into a file test.cfg and try
-`build/tools/covenant test.cfg`, you should obtain:
+`covenant test.cfg`, you should obtain:
 
 `Finished after 5 cegar iterations.`   
 
 ` UNSAT`
+
+Since covenant might not terminate, we provide a script `covenant-par`
+that runs in parallel several configurations (i.e., heuristics) and
+stops as soon as one of the them terminates:
+
+`my_install_dir/bin/covenant-par file`
 
 #People#
 
@@ -89,4 +89,4 @@ If we wrap the above example into a file test.cfg and try
 
 #Publications#
 
-- "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/cfg_nfm15.pdf) . To appear in NFM'15
+- "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/cfg_nfm15.pdf) . NFM'15

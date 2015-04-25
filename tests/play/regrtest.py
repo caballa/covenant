@@ -8,16 +8,49 @@ import subprocess
 from subprocess import Popen, PIPE, call
 import csv
 
-brunch_cmmd = "../../scripts/brunch.py"
-covenant = "../../build/tools/covenant"
 timeout="2"
+
+def isexec (fpath):
+    if fpath == None: return False
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+def which(program):
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if isexec (program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if isexec (exe_file):
+                return exe_file
+    return None
+
+def getBrunch ():
+    brunch = None
+    if 'COVENANT' in os.environ:
+        brunch = os.environ ['COVENANT']
+        brunch = os.path.join (brunch, "bin", "brunch.py")
+    if not isexec (brunch):
+        raise IOError ("Cannot find brunch. Set environment COVENANT variable.")
+    return brunch
+
+def getCovenant ():
+    covenant = None
+    if 'COVENANT' in os.environ:
+        covenant = os.environ ['COVENANT']
+        covenant = os.path.join (covenant, "bin", "covenant")
+    if not isexec (covenant):
+        raise IOError ("Cannot find covenant. Set environment COVENANT variable.")
+    return covenant
+
 
 def printf(format, *args):
     sys.stdout.write(format % args)
 
 def run_brunch(files, timeout, outdir, tool_cmmd, tool_args):
     args = []
-    args.append(brunch_cmmd)
+    args.append(getBrunch ())
     args.append(" ")
     for f in files:
         args.append(f)
@@ -104,7 +137,7 @@ def main (argv):
                 fullname = os.path.join(root, file)
                 infiles.append(os.path.abspath(fullname))
 
-    run_brunch(infiles, timeout, "default-config", covenant, "")
+    run_brunch(infiles, timeout, "default-config", getCovenant (), "")
 
     show_results(os.path.join("default-config","stats"), False, False)
 

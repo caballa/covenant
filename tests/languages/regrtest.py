@@ -8,16 +8,48 @@ import subprocess
 from subprocess import Popen, PIPE, call
 import csv
 
-brunch_cmmd = "../../scripts/brunch.py"
-covenant = "../../build/tools/covenant"
 timeout="12"
+
+def isexec (fpath):
+    if fpath == None: return False
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+def which(program):
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if isexec (program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if isexec (exe_file):
+                return exe_file
+    return None
+
+def getBrunch ():
+    brunch = None
+    if 'COVENANT' in os.environ:
+        brunch = os.environ ['COVENANT']
+        brunch = os.path.join (brunch, "bin", "brunch.py")
+    if not isexec (brunch):
+        raise IOError ("Cannot find brunch. Set environment COVENANT variable.")
+    return brunch
+
+def getCovenant ():
+    covenant = None
+    if 'COVENANT' in os.environ:
+        covenant = os.environ ['COVENANT']
+        covenant = os.path.join (covenant, "bin", "covenant")
+    if not isexec (covenant):
+        raise IOError ("Cannot find covenant. Set environment COVENANT variable.")
+    return covenant
 
 def printf(format, *args):
     sys.stdout.write(format % args)
 
 def run_brunch(files, timeout, outdir, tool_cmmd, tool_args):
     args = []
-    args.append(brunch_cmmd)
+    args.append(getBrunch ())
     args.append(" ")
     for f in files:
         args.append(f)
@@ -107,19 +139,19 @@ def main (argv):
 
     outdir =  "sigma-star--greedy"         
     tool_args = "-a sigma-star -g greedy"
-    run_brunch(infiles, timeout, outdir , covenant, tool_args)
+    run_brunch(infiles, timeout, outdir , getCovenant (), tool_args)
     show_results(os.path.join(outdir,'stats'), False, False)
     outdir =  "sigma-star--max-gen" 
     tool_args = "-a sigma-star -g max-gen"
-    run_brunch(infiles, timeout, outdir , covenant, tool_args)
+    run_brunch(infiles, timeout, outdir , getCovenant (), tool_args)
     show_results(os.path.join(outdir,'stats'), False, False)
     outdir = "cycle-breaking--greedy"
     tool_args = "-a cycle-breaking -g greedy"
-    run_brunch(infiles, timeout, outdir , covenant, tool_args)
+    run_brunch(infiles, timeout, outdir , getCovenant (), tool_args)
     show_results(os.path.join(outdir,'stats'), False, False)
     outdir = "cycle-breaking--max-gen"
     tool_args = " -a cycle-breaking -g max-gen"
-    run_brunch(infiles, timeout, outdir , covenant, tool_args)
+    run_brunch(infiles, timeout, outdir , getCovenant (), tool_args)
     show_results(os.path.join(outdir,'stats'), False, False)
 
 if __name__ == "__main__":

@@ -5,3 +5,4 @@ set (USED_LIBS
 
 add_executable(covenant covenant.cpp)
 target_link_libraries (covenant ${USED_LIBS})
+install (TARGETS covenant RUNTIME DESTINATION bin)

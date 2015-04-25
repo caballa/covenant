@@ -75,11 +75,9 @@ def createWorkDir (dname = None, save = False):
     return workdir
 
 def getCovenant (): 
-    covenant = os.path.join (root, "covenant")
+    covenant = os.path.join (root, "bin", "covenant")
     if not isexec (covenant):
-        covenant = os.path.join (root, "build/tools/covenant")
-    if not isexec (covenant):
-        raise IOError ("Cannot find covenant")
+        raise IOError ("Cannot find covenant at " + covenant)
     return covenant
 
 def cat (in_file, out_file): out_file.write (in_file.read ())

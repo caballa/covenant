@@ -47,9 +47,19 @@ endif ()
 ## This should be enabled until stable version
 add_definitions(-DSANITY_CHECKS)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(include)
 add_subdirectory(lib)
 add_subdirectory(tools)
+add_subdirectory(py)
+
+install(DIRECTORY include/
+  DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN "*.hh"
+  PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+  )
 
 
 
