@@ -1,6 +1,7 @@
 #ifndef __CFG_H__
 #define __CFG_H__
 
+#include <iostream>
 #include <stack>
 #include <limits>
 
