@@ -34,19 +34,19 @@ namespace covenant {
         return dfa;
       }
       // Try greedily adding backwards transitions first. 
-      for(int di = 0; di < gen.nStates(); di++)
+      for(int di = 1; di < gen.nStates(); di++)
       {
         for(int qi = 0; qi < gen.nStates() - di; qi++)
         {
           int qj = qi + di;
           // Push a choice point
           gen.push();
-          if(!gen.addTrans(qj, gen.word[qj], qi))
+          if(!gen.addTrans(qj-1, gen.word[qj-1], qi))
             gen.pop();
         }
       }
       
-      // Now add forward-epsilon transitions
+      // Now emit the result
       for(int di = 1; di < gen.nStates(); di++)
       {
         for(int qi = 0; qi < gen.nStates() - di; qi++)

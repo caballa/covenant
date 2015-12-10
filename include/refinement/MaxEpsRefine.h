@@ -44,7 +44,7 @@ namespace covenant {
 
     dfa_t maximum_refinement(cond_eps_gen_t& gen, int qi, int qj)
     {
-      if(qi >= gen.nStates())
+      if(qi > gen.nStates())
         return gen.emit_dfa();
       assert(qj < gen.nStates());
 
@@ -73,10 +73,9 @@ namespace covenant {
  
         }
       } 
-      else 
-      {
+      else if (qj < qi) {
         // Backwards, an input-consuming transition 
-        if(gen.addTrans(qj, gen.word[qj], qi))
+        if(gen.addTrans(qi-1, gen.word[qi-1], qj))
         {
           dfa_t include_dfa(maximum_refinement(gen, 
                                                qi_next, 
