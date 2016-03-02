@@ -79,14 +79,6 @@ stops as soon as one of the them terminates:
 
 `my_install_dir/bin/covenant-par file`
 
-#People#
-
-* [Jorge A. Navas](http://ti.arc.nasa.gov/profile/jorge/)
-* Graeme Gange
-* Peter Schachte
-* Harald Sondergaard
-* Peter J. Stuckey
-
 #Publications#
 
 - "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/cfg_nfm15.pdf) . NFM'15
