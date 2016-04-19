@@ -82,3 +82,5 @@ stops as soon as one of the them terminates:
 #Publications#
 
 - "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/cfg_nfm15.pdf) . NFM'15
+
+- "A Complete Refinement Procedure for Regular Separability of Context-Free Languages". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/CFG-TCS-2016.pdf). TCS, 2016.
