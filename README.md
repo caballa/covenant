@@ -2,7 +2,7 @@
 
 Intersection of Context-Free Languages
 
-#About#
+## About ##
 
 Covenant is a tool for testing emptiness of a set of context free
 languages (CFLs). Since this problem is undecidable, Covenant
@@ -12,12 +12,12 @@ complete if the CFLs are regularly separable.
 
 Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
 
-#Prerequisites#
+## Prerequisites ##
 
 - Boost is required. It is recommended version 1.55 or newer
 - Be sure to install the Boost program_options library and set `BOOST_ROOT`
 
-#Installation#
+## Installation ##
 
 - `mkdir build && cd build`
 - `cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ..`
@@ -25,7 +25,7 @@ Read this [technical report](http://arxiv.org/abs/1411.5131) for details.
 
 The code has been tested only for X86_64 with clang++ 3.2 and g++ 4.8
 
-#Usage#
+## Usage ##
 
 `my_install_dir/bin/covenant --help` 
 
@@ -79,7 +79,7 @@ stops as soon as one of the them terminates:
 
 `my_install_dir/bin/covenant-par file`
 
-#Publications#
+## Publications ##
 
 - "A Tool for Intersecting Context-Free Grammars and Its Applications". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/cfg_nfm15.pdf) . NFM'15
 
